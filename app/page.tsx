@@ -5,6 +5,8 @@ import { collection, query, orderBy, limit, getDocs, where } from 'firebase/fire
 import { db } from '@/lib/firebase'
 import { Car } from '@/types'
 import CarCard from '@/components/CarCard'
+import { LoadingCard } from '@/components/ui/loading-spinner'
+import { ErrorState } from '@/components/ui/error-state'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
@@ -13,6 +15,7 @@ import { Search, ArrowRight, Star, Shield, Award } from 'lucide-react'
 export default function Home() {
   const [cars, setCars] = useState<Car[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
@@ -39,7 +42,8 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Error fetching cars:', error)
-      // Fallback to sample cars
+      setError('Failed to load vehicles. Please try again.')
+      // Fallback to sample cars on error
       setCars(getSampleCars())
     } finally {
       setLoading(false)
@@ -54,7 +58,7 @@ export default function Home() {
       year: 2024,
       trim: 'XLE',
       basePrice: 28900,
-      images: ['/cars/camry-2024.jpg'],
+      images: ['/placeholder-car.svg'],
       specifications: {
         engine: '2.5L 4-Cylinder',
         transmission: 'Automatic',
@@ -74,7 +78,7 @@ export default function Home() {
       year: 2024,
       trim: 'Adventure',
       basePrice: 34500,
-      images: ['/cars/rav4-2024.jpg'],
+      images: ['/placeholder-car.svg'],
       specifications: {
         engine: '2.5L 4-Cylinder',
         transmission: 'CVT',
@@ -94,7 +98,7 @@ export default function Home() {
       year: 2024,
       trim: 'LE',
       basePrice: 26400,
-      images: ['/cars/prius-2024.jpg'],
+      images: ['/placeholder-car.svg'],
       specifications: {
         engine: '1.8L Hybrid',
         transmission: 'CVT',
@@ -114,7 +118,7 @@ export default function Home() {
       year: 2024,
       trim: 'XLE',
       basePrice: 38420,
-      images: ['/cars/highlander-2024.jpg'],
+      images: ['/placeholder-car.svg'],
       specifications: {
         engine: '3.5L V6',
         transmission: '8-Speed Automatic',
@@ -134,7 +138,7 @@ export default function Home() {
       year: 2024,
       trim: 'LE',
       basePrice: 23200,
-      images: ['/cars/corolla-2024.jpg'],
+      images: ['/placeholder-car.svg'],
       specifications: {
         engine: '2.0L 4-Cylinder',
         transmission: 'CVT',
@@ -154,7 +158,7 @@ export default function Home() {
       year: 2024,
       trim: 'SR5',
       basePrice: 31895,
-      images: ['/cars/tacoma-2024.jpg'],
+      images: ['/placeholder-car.svg'],
       specifications: {
         engine: '2.7L 4-Cylinder',
         transmission: '6-Speed Automatic',
@@ -169,11 +173,21 @@ export default function Home() {
     },
   ]
 
-  const filteredCars = cars.filter(car =>
-    car.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    car.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    car.trim.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredCars = cars.filter(car => {
+    const searchQuery = searchTerm.toLowerCase().trim()
+    if (!searchQuery) return true
+    
+    const carText = `${car.make} ${car.model} ${car.trim} ${car.year} ${car.specifications.bodyStyle}`.toLowerCase()
+    
+    // Handle multi-word searches by splitting on spaces
+    const searchWords = searchQuery.split(/\s+/)
+    return searchWords.every(word => 
+      carText.includes(word) || 
+      car.make.toLowerCase().includes(word) ||
+      car.model.toLowerCase().includes(word) ||
+      car.trim.toLowerCase().includes(word)
+    )
+  })
 
   if (loading) {
     return (
@@ -267,9 +281,30 @@ export default function Home() {
             </p>
           </div>
 
-          {filteredCars.length === 0 ? (
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <LoadingCard key={index} />
+              ))}
+            </div>
+          ) : error ? (
+            <ErrorState
+              title="Unable to Load Vehicles"
+              message={error}
+              action={{
+                label: "Retry",
+                onClick: () => {
+                  setError(null)
+                  setLoading(true)
+                  fetchNewestCars()
+                }
+              }}
+            />
+          ) : filteredCars.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500">No vehicles found matching your search.</p>
+              <p className="text-gray-500">
+                {searchTerm ? 'No vehicles found matching your search.' : 'No vehicles available at this time.'}
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

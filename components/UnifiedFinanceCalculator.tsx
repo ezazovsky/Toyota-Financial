@@ -1,4 +1,3 @@
-// components/FinanceCalculator.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -10,12 +9,20 @@ import { FinanceCalculation } from '@/types'
 import { Calculator, TrendingUp, DollarSign, Star, Info } from 'lucide-react'
 import { getPricingBucket, getBucketRecommendations } from '@/lib/pricingBuckets'
 
-interface FinanceCalculatorProps {
+interface UnifiedFinanceCalculatorProps {
   vehiclePrice: number
-  onCalculationChange?: (calculation: FinanceCalculation) => void
+  onValuesChange?: (values: {
+    financeType: 'finance' | 'lease'
+    creditScore: number
+    annualIncome: number
+    downPayment: number
+    termLength: number
+    annualMileage?: number
+    calculation: FinanceCalculation
+  }) => void
 }
 
-export default function FinanceCalculator({ vehiclePrice, onCalculationChange }: FinanceCalculatorProps) {
+export default function UnifiedFinanceCalculator({ vehiclePrice, onValuesChange }: UnifiedFinanceCalculatorProps) {
   const [financeType, setFinanceType] = useState<'finance' | 'lease'>('finance')
   const [creditScore, setCreditScore] = useState(700)
   const [annualIncome, setAnnualIncome] = useState(60000)
@@ -29,33 +36,27 @@ export default function FinanceCalculator({ vehiclePrice, onCalculationChange }:
   const recommendations = getBucketRecommendations(pricingBucket, creditScore)
 
   useEffect(() => {
-    calculatePayments()
-  }, [financeType, creditScore, downPayment, termLength, annualMileage, vehiclePrice])
+    calculatePayment()
+  }, [financeType, creditScore, annualIncome, downPayment, termLength, annualMileage, vehiclePrice])
 
-  // Set recommended down payment when pricing bucket changes
-  useEffect(() => {
-    setDownPayment(recommendations.adjustedDownPayment)
-    setTermLength(pricingBucket.popularTerm)
-  }, [vehiclePrice, creditScore])
-
-  const calculatePayments = () => {
+  const calculatePayment = () => {
+    const loanAmount = vehiclePrice - downPayment
     const interestRate = getInterestRateByCredit(creditScore)
     
     let monthlyPayment: number
     let totalCost: number
-    
-    if (financeType === 'finance') {
-      monthlyPayment = calculateMonthlyPayment(vehiclePrice, interestRate, termLength, downPayment)
-      totalCost = (monthlyPayment * termLength) + downPayment
-    } else {
-      // Lease calculation
-      const residualValue = getResidualValue(vehiclePrice, termLength)
-      const moneyFactor = interestRate / 2400 // Convert APR to money factor
-      monthlyPayment = calculateLeasePayment(vehiclePrice, residualValue, moneyFactor, termLength, downPayment)
-      totalCost = (monthlyPayment * termLength) + downPayment
-    }
+    let totalInterest: number
 
-    const totalInterest = totalCost - vehiclePrice
+    if (financeType === 'lease') {
+      const residualValue = getResidualValue(vehiclePrice, termLength)
+      monthlyPayment = calculateLeasePayment(loanAmount, residualValue, interestRate, termLength)
+      totalCost = (monthlyPayment * termLength) + downPayment
+      totalInterest = totalCost - vehiclePrice
+    } else {
+      monthlyPayment = calculateMonthlyPayment(loanAmount, interestRate, termLength)
+      totalCost = (monthlyPayment * termLength) + downPayment
+      totalInterest = totalCost - vehiclePrice
+    }
 
     const newCalculation: FinanceCalculation = {
       monthlyPayment,
@@ -67,7 +68,17 @@ export default function FinanceCalculator({ vehiclePrice, onCalculationChange }:
     }
 
     setCalculation(newCalculation)
-    onCalculationChange?.(newCalculation)
+    
+    // Notify parent with all values
+    onValuesChange?.({
+      financeType,
+      creditScore,
+      annualIncome,
+      downPayment,
+      termLength,
+      annualMileage: financeType === 'lease' ? annualMileage : undefined,
+      calculation: newCalculation
+    })
   }
 
   return (
@@ -112,122 +123,121 @@ export default function FinanceCalculator({ vehiclePrice, onCalculationChange }:
         </CardContent>
       </Card>
 
-      {/* Finance Calculator */}
+      {/* Unified Finance Form & Calculator */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
             <Calculator className="mr-2 h-5 w-5" />
-            Payment Calculator
+            Payment Calculator & Application Details
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <Button
-              variant={financeType === 'finance' ? 'default' : 'outline'}
-              onClick={() => setFinanceType('finance')}
-              className="w-full"
-            >
-              Finance
-            </Button>
-            <Button
-              variant={financeType === 'lease' ? 'default' : 'outline'}
-              onClick={() => setFinanceType('lease')}
-              className="w-full"
-            >
-              Lease
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Credit Score
-              </label>
-              <Input
-                type="number"
-                min="300"
-                max="850"
-                value={creditScore}
-                onChange={(e) => setCreditScore(Number(e.target.value))}
-                placeholder="700"
+          <div className="space-y-6">
+            {/* Finance Type Selection */}
+            <div className="grid grid-cols-2 gap-4">
+              <Button
+                variant={financeType === 'finance' ? 'default' : 'outline'}
+                onClick={() => setFinanceType('finance')}
                 className="w-full"
-              />
-              <div className="text-xs text-gray-500 mt-1">
-                Enter your credit score (300-850)
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Annual Income
-              </label>
-              <Input
-                type="number"
-                value={annualIncome}
-                onChange={(e) => setAnnualIncome(Number(e.target.value))}
-                placeholder="60000"
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Down Payment
-              </label>
-              <Input
-                type="number"
-                value={downPayment}
-                onChange={(e) => setDownPayment(Number(e.target.value))}
-                placeholder="5000"
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Term Length (months)
-              </label>
-              <select
-                value={termLength}
-                onChange={(e) => setTermLength(Number(e.target.value))}
-                className="w-full h-9 px-3 rounded-md border border-gray-300 bg-white text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500"
               >
-                {pricingBucket.recommendedTerms.map(term => (
-                  <option key={term} value={term}>
-                    {term} months {term === pricingBucket.popularTerm ? '(Popular)' : ''}
-                  </option>
-                ))}
-              </select>
-              <div className="text-xs text-gray-500 mt-1">
-                Recommended terms for this vehicle class
-              </div>
+                Finance
+              </Button>
+              <Button
+                variant={financeType === 'lease' ? 'default' : 'outline'}
+                onClick={() => setFinanceType('lease')}
+                className="w-full"
+              >
+                Lease
+              </Button>
             </div>
 
-            {financeType === 'lease' && (
-              <div className="md:col-span-2">
+            {/* Input Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Annual Mileage: {annualMileage.toLocaleString()} miles
+                  Credit Score
                 </label>
-                <input
-                  type="range"
-                  min="5000"
-                  max="25000"
-                  step="1000"
-                  value={annualMileage}
-                  onChange={(e) => setAnnualMileage(Number(e.target.value))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                <Input
+                  type="number"
+                  min="300"
+                  max="850"
+                  value={creditScore}
+                  onChange={(e) => setCreditScore(Number(e.target.value))}
+                  className="w-full"
+                  placeholder="700"
                 />
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>5,000 miles</span>
-                  <span>25,000 miles</span>
+                <div className="text-xs text-gray-500 mt-1">Enter your credit score (300-850)</div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Annual Income
+                </label>
+                <Input
+                  type="number"
+                  value={annualIncome}
+                  onChange={(e) => setAnnualIncome(Number(e.target.value))}
+                  className="w-full"
+                  placeholder="60000"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Down Payment
+                </label>
+                <Input
+                  type="number"
+                  value={downPayment}
+                  onChange={(e) => setDownPayment(Number(e.target.value))}
+                  className="w-full"
+                  placeholder="5000"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Term Length (months)
+                </label>
+                <select
+                  value={termLength}
+                  onChange={(e) => setTermLength(Number(e.target.value))}
+                  className="w-full h-9 px-3 rounded-md border border-gray-300 bg-white text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500"
+                >
+                  {pricingBucket.recommendedTerms.map(term => (
+                    <option key={term} value={term}>
+                      {term} months {term === pricingBucket.popularTerm ? '(Popular)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <div className="text-xs text-gray-500 mt-1">
+                  Recommended terms for this vehicle class
                 </div>
               </div>
-            )}
+
+              {financeType === 'lease' && (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Annual Mileage
+                  </label>
+                  <Input
+                    type="number"
+                    value={annualMileage}
+                    onChange={(e) => setAnnualMileage(Number(e.target.value))}
+                    className="w-full"
+                    placeholder="12000"
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    Typical range: 10,000 - 15,000 miles per year
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Calculation Results */}
+      {/* Payment Results */}
       {calculation && (
         <Card>
           <CardHeader>

@@ -47,7 +47,7 @@ export default function VehiclesPage() {
       year: 2024,
       trim: 'XLE',
       basePrice: 28900,
-      images: ['/cars/camry-2024.jpg'],
+      images: ['/placeholder-car.svg'],
       specifications: {
         engine: '2.5L 4-Cylinder',
         transmission: 'Automatic',
@@ -67,7 +67,7 @@ export default function VehiclesPage() {
       year: 2024,
       trim: 'Adventure',
       basePrice: 34500,
-      images: ['/cars/rav4-2024.jpg'],
+      images: ['/placeholder-car.svg'],
       specifications: {
         engine: '2.5L 4-Cylinder',
         transmission: 'CVT',
@@ -87,7 +87,7 @@ export default function VehiclesPage() {
       year: 2024,
       trim: 'LE',
       basePrice: 26400,
-      images: ['/cars/prius-2024.jpg'],
+      images: ['/placeholder-car.svg'],
       specifications: {
         engine: '1.8L Hybrid',
         transmission: 'CVT',
@@ -107,7 +107,7 @@ export default function VehiclesPage() {
       year: 2024,
       trim: 'XLE',
       basePrice: 38420,
-      images: ['/cars/highlander-2024.jpg'],
+      images: ['/placeholder-car.svg'],
       specifications: {
         engine: '3.5L V6',
         transmission: '8-Speed Automatic',
@@ -127,7 +127,7 @@ export default function VehiclesPage() {
       year: 2024,
       trim: 'LE',
       basePrice: 23200,
-      images: ['/cars/corolla-2024.jpg'],
+      images: ['/placeholder-car.svg'],
       specifications: {
         engine: '2.0L 4-Cylinder',
         transmission: 'CVT',
@@ -147,7 +147,7 @@ export default function VehiclesPage() {
       year: 2024,
       trim: 'SR5',
       basePrice: 31895,
-      images: ['/cars/tacoma-2024.jpg'],
+      images: ['/placeholder-car.svg'],
       specifications: {
         engine: '2.7L 4-Cylinder',
         transmission: '6-Speed Automatic',
@@ -167,7 +167,7 @@ export default function VehiclesPage() {
       year: 2024,
       trim: 'LE',
       basePrice: 36340,
-      images: ['/cars/sienna-2024.jpg'],
+      images: ['/placeholder-car.svg'],
       specifications: {
         engine: '2.5L Hybrid',
         transmission: 'CVT',
@@ -187,7 +187,7 @@ export default function VehiclesPage() {
       year: 2024,
       trim: '3.0',
       basePrice: 56545,
-      images: ['/cars/supra-2024.jpg'],
+      images: ['/placeholder-car.svg'],
       specifications: {
         engine: '3.0L Turbo I6',
         transmission: '8-Speed Automatic',

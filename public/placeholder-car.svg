@@ -1,0 +1,10 @@
+// public/placeholder-car.svg
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="#f3f4f6"/>
+  <rect x="50" y="100" width="300" height="100" rx="20" fill="#d1d5db"/>
+  <circle cx="100" cy="220" r="25" fill="#6b7280"/>
+  <circle cx="300" cy="220" r="25" fill="#6b7280"/>
+  <rect x="80" y="120" width="240" height="60" rx="10" fill="#9ca3af"/>
+  <path d="M120 150 L150 130 L250 130 L280 150 Z" fill="#e5e7eb"/>
+  <text x="200" y="270" text-anchor="middle" fill="#6b7280" font-family="Arial, sans-serif" font-size="14">Toyota Vehicle</text>
+</svg>

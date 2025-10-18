@@ -8,8 +8,8 @@ import { db } from '@/lib/firebase'
 import { Car, FinanceRequest, Dealership, FinanceCalculation } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import FinanceCalculator from '@/components/FinanceCalculator'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import UnifiedFinanceCalculator from '@/components/UnifiedFinanceCalculator'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -94,7 +94,7 @@ export default function FinanceApplicationPage() {
         year: 2024,
         trim: 'XLE',
         basePrice: 28900,
-        images: ['/cars/camry-2024.jpg'],
+        images: ['/placeholder-car.svg'],
         specifications: {
           engine: '2.5L 4-Cylinder',
           transmission: '8-Speed Automatic',
@@ -235,115 +235,39 @@ export default function FinanceApplicationPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Finance Calculator */}
+          {/* Unified Finance Calculator & Form */}
           <div>
-            <FinanceCalculator
+            <UnifiedFinanceCalculator
               vehiclePrice={car.basePrice}
-              onCalculationChange={(calc) => {
-                setCalculation(calc)
-                setValue('creditScore', 700) // You can sync these values
-                setValue('downPayment', calc.downPayment)
-                setValue('termLength', calc.termLength)
+              onValuesChange={(values) => {
+                setCalculation(values.calculation)
+                // Sync all values with the form
+                setValue('financeType', values.financeType)
+                setValue('creditScore', values.creditScore)
+                setValue('annualIncome', values.annualIncome)
+                setValue('downPayment', values.downPayment)
+                setValue('termLength', values.termLength)
+                if (values.annualMileage) {
+                  setValue('annualMileage', values.annualMileage)
+                }
               }}
             />
           </div>
 
-          {/* Application Form */}
-          <div>
+          {/* Application Submission */}
+          <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Application Details</CardTitle>
+                <CardTitle>Submit Your Application</CardTitle>
+                <CardDescription>
+                  Select a dealership to complete your finance application. All calculation details will be automatically included.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Finance Type
-                      </label>
-                      <select
-                        {...register('financeType')}
-                        className="w-full h-9 px-3 rounded-md border border-gray-300 bg-white text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500"
-                      >
-                        <option value="finance">Finance</option>
-                        <option value="lease">Lease</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Credit Score
-                      </label>
-                      <Input
-                        type="number"
-                        {...register('creditScore', { valueAsNumber: true })}
-                        placeholder="700"
-                      />
-                      {errors.creditScore && (
-                        <p className="text-red-600 text-sm">{errors.creditScore.message}</p>
-                      )}
-                    </div>
-                  </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Annual Income
-                    </label>
-                    <Input
-                      type="number"
-                      {...register('annualIncome', { valueAsNumber: true })}
-                      placeholder="60000"
-                    />
-                    {errors.annualIncome && (
-                      <p className="text-red-600 text-sm">{errors.annualIncome.message}</p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Down Payment
-                      </label>
-                      <Input
-                        type="number"
-                        {...register('downPayment', { valueAsNumber: true })}
-                        placeholder="5000"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Term Length (months)
-                      </label>
-                      <select
-                        {...register('termLength', { valueAsNumber: true })}
-                        className="w-full h-9 px-3 rounded-md border border-gray-300 bg-white text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500"
-                      >
-                        <option value={24}>24 months</option>
-                        <option value={36}>36 months</option>
-                        <option value={48}>48 months</option>
-                        <option value={60}>60 months</option>
-                        <option value={72}>72 months</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {watch('financeType') === 'lease' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Annual Mileage
-                      </label>
-                      <Input
-                        type="number"
-                        {...register('annualMileage', { valueAsNumber: true })}
-                        placeholder="12000"
-                      />
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Select Dealership
+                      Select Dealership *
                     </label>
                     <select
                       {...register('dealershipId')}
@@ -352,23 +276,43 @@ export default function FinanceApplicationPage() {
                       <option value="">Choose a dealership...</option>
                       {dealerships.map((dealer) => (
                         <option key={dealer.id} value={dealer.id}>
-                          {dealer.name}
+                          {dealer.name} - {dealer.city}, {dealer.state}
                         </option>
                       ))}
                     </select>
                     {errors.dealershipId && (
                       <p className="text-red-600 text-sm">{errors.dealershipId.message}</p>
                     )}
+                    <div className="text-xs text-gray-500 mt-1">
+                      Choose your preferred dealership for this application
+                    </div>
                   </div>
 
                   {calculation && (
-                    <div className="p-4 bg-blue-50 rounded-lg">
-                      <h4 className="font-semibold text-blue-900 mb-2">Estimated Payment</h4>
-                      <div className="text-2xl font-bold text-blue-600">
-                        {formatCurrency(calculation.monthlyPayment)}/month
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <h4 className="font-semibold text-green-900 mb-2">Application Summary</h4>
+                      <div className="grid grid-cols-2 gap-4 text-sm text-green-800 mb-3">
+                        <div>
+                          <span className="font-medium">Monthly Payment:</span>
+                          <div className="text-xl font-bold text-green-600">
+                            {formatCurrency(calculation.monthlyPayment)}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="font-medium">Finance Type:</span>
+                          <div className="capitalize font-semibold">{watch('financeType')}</div>
+                        </div>
+                        <div>
+                          <span className="font-medium">Credit Score:</span>
+                          <div className="font-semibold">{watch('creditScore')}</div>
+                        </div>
+                        <div>
+                          <span className="font-medium">Down Payment:</span>
+                          <div className="font-semibold">{formatCurrency(watch('downPayment') || 0)}</div>
+                        </div>
                       </div>
-                      <p className="text-sm text-blue-700">
-                        Based on your inputs. Final terms may vary.
+                      <p className="text-xs text-green-700">
+                        Ready to submit your application with the details above.
                       </p>
                     </div>
                   )}
@@ -376,42 +320,49 @@ export default function FinanceApplicationPage() {
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={submitting || !calculation}
+                    disabled={submitting || !calculation || !watch('dealershipId')}
                   >
-                    {submitting ? 'Submitting...' : 'Submit Application'}
+                    {submitting ? 'Submitting Application...' : 'Submit Finance Application'}
                   </Button>
                 </form>
               </CardContent>
             </Card>
 
-            {/* Dealership Info */}
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-4">Available Dealerships</h3>
-              <div className="space-y-3">
-                {dealerships.map((dealer) => (
-                  <Card key={dealer.id} className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium">{dealer.name}</h4>
-                        <div className="flex items-center text-sm text-gray-600 mt-1">
-                          <MapPin className="h-4 w-4 mr-1" />
-                          {dealer.address}, {dealer.city}, {dealer.state} {dealer.zipCode}
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600 mt-1">
-                          <Phone className="h-4 w-4 mr-1" />
-                          {dealer.phone}
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600 mt-1">
-                          <Mail className="h-4 w-4 mr-1" />
-                          {dealer.email}
+            {/* Dealership Information Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Available Dealerships</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {dealerships.slice(0, 2).map((dealer) => (
+                    <div key={dealer.id} className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium">{dealer.name}</h4>
+                          <div className="flex items-center text-sm text-gray-600 mt-1">
+                            <MapPin className="h-4 w-4 mr-1" />
+                            {dealer.address}, {dealer.city}, {dealer.state} {dealer.zipCode}
+                          </div>
+                          <div className="flex items-center text-sm text-gray-600 mt-1">
+                            <Phone className="h-4 w-4 mr-1" />
+                            {dealer.phone}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
+                  ))}
+                  {dealerships.length > 2 && (
+                    <p className="text-sm text-gray-500 text-center">
+                      +{dealerships.length - 2} more available in the dropdown
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
+
+
         </div>
       </div>
     </div>

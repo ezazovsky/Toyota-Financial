@@ -57,7 +57,7 @@ export default function VehicleDetailPage() {
         year: 2024,
         trim: 'XLE',
         basePrice: 28900,
-        images: ['/cars/camry-2024.jpg', '/cars/camry-interior.jpg', '/cars/camry-side.jpg'],
+        images: ['/placeholder-car.svg'],
         specifications: {
           engine: '2.5L 4-Cylinder',
           transmission: '8-Speed Automatic',
@@ -93,7 +93,7 @@ export default function VehicleDetailPage() {
         year: 2024,
         trim: 'Adventure',
         basePrice: 34500,
-        images: ['/cars/rav4-2024.jpg', '/cars/rav4-interior.jpg'],
+        images: ['/placeholder-car.svg'],
         specifications: {
           engine: '2.5L 4-Cylinder',
           transmission: 'CVT',

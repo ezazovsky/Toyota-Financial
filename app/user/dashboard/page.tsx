@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense, useCallback } from 'react'
 import { useAuthRedirect } from '@/hooks/useAuthRedirect'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,7 +11,7 @@ import { CarService } from '@/lib/services/carService'
 import { FinanceRequest, Offer, Car } from '@/types'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { EnhancedLoading, ApplicationSkeleton } from '@/components/ui/enhanced-loading'
+import { EnhancedLoading } from '@/components/ui/enhanced-loading'
 import { 
   Clock, 
   CheckCircle, 
@@ -19,40 +19,31 @@ import {
   AlertCircle, 
   Car as CarIcon,
   FileText,
-  DollarSign,
-  Calendar,
-  RefreshCw,
   Plus
 } from 'lucide-react'
+
+// Component that uses useSearchParams - wrapped in Suspense
+function SearchParamsHandler({ onApplicationId }: { onApplicationId: (id: string | null) => void }) {
+  const searchParams = useSearchParams()
+  const applicationId = searchParams.get('applicationId')
+
+  useEffect(() => {
+    onApplicationId(applicationId)
+  }, [applicationId, onApplicationId])
+
+  return null
+}
 
 export default function UserDashboardPage() {
   const { user, loading: authLoading } = useAuthRedirect()
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [financeRequests, setFinanceRequests] = useState<FinanceRequest[]>([])
   const [offers, setOffers] = useState<{ [requestId: string]: Offer[] }>({})
   const [cars, setCars] = useState<{ [carId: string]: Car }>({})
   const [loading, setLoading] = useState(true)
-  const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null)
+  const [applicationId, setApplicationId] = useState<string | null>(null)
 
-  const applicationId = searchParams.get('applicationId')
-
-  useEffect(() => {
-    if (user) {
-      fetchUserData()
-    }
-  }, [user])
-
-  useEffect(() => {
-    if (applicationId && financeRequests.length > 0) {
-      const newApplication = financeRequests.find(req => req.id === applicationId)
-      if (newApplication) {
-        toast.success('Your application has been submitted successfully!')
-      }
-    }
-  }, [applicationId, financeRequests])
-
-  const fetchUserData = () => {
+  const fetchUserData = useCallback(() => {
     if (!user) return
 
     setLoading(true)
@@ -92,7 +83,22 @@ export default function UserDashboardPage() {
       unsubscribeRequests()
       unsubscribeOffers()
     }
-  }
+  }, [user, financeRequests])
+
+  useEffect(() => {
+    if (user) {
+      fetchUserData()
+    }
+  }, [user, fetchUserData])
+
+  useEffect(() => {
+    if (applicationId && financeRequests.length > 0) {
+      const newApplication = financeRequests.find(req => req.id === applicationId)
+      if (newApplication) {
+        toast.success('Your application has been submitted successfully!')
+      }
+    }
+  }, [applicationId, financeRequests])
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -171,6 +177,9 @@ export default function UserDashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Suspense fallback={null}>
+        <SearchParamsHandler onApplicationId={setApplicationId} />
+      </Suspense>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">My Dashboard</h1>

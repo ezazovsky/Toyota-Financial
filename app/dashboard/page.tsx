@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+
 import { FinanceRequest, Offer } from '@/types'
+import { FinanceService } from '@/lib/services/financeService'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -26,104 +26,24 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user) {
-      fetchFinanceRequests()
+      const unsubscribe = fetchFinanceRequests()
+      return unsubscribe
     }
   }, [user])
 
   const fetchFinanceRequests = () => {
     if (!user) return
 
-    // For demo purposes, create sample data if none exists
-    const sampleRequests: FinanceRequest[] = [
-      {
-        id: '1',
-        userId: user.id,
-        carId: '1',
-        dealershipId: '1',
-        financeType: 'finance',
-        creditScore: 720,
-        annualIncome: 65000,
-        termLength: 60,
-        downPayment: 5000,
-        monthlyPayment: 485,
-        status: 'counter-offer',
-        dealerNotes: 'We can offer better terms with a higher down payment',
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-        updatedAt: new Date(),
-        offers: [
-          {
-            id: 'o1',
-            financeRequestId: '1',
-            dealerUserId: 'dealer1',
-            monthlyPayment: 445,
-            downPayment: 7000,
-            termLength: 60,
-            interestRate: 3.9,
-            totalCost: 33700,
-            status: 'active',
-            notes: 'Special promotion rate for qualified buyers',
-            validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-            createdAt: new Date(),
-          }
-        ],
-      },
-      {
-        id: '2',
-        userId: user.id,
-        carId: '2',
-        dealershipId: '2',
-        financeType: 'lease',
-        creditScore: 720,
-        annualIncome: 65000,
-        termLength: 36,
-        annualMileage: 12000,
-        downPayment: 2000,
-        monthlyPayment: 395,
-        status: 'approved',
-        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
-        updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
-        offers: [],
-      },
-      {
-        id: '3',
-        userId: user.id,
-        carId: '1',
-        dealershipId: '3',
-        financeType: 'finance',
-        creditScore: 720,
-        annualIncome: 65000,
-        termLength: 48,
-        downPayment: 4000,
-        monthlyPayment: 515,
-        status: 'pending',
-        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
-        updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-        offers: [],
-      },
-    ]
+    // Use the FinanceService to subscribe to user's finance requests
+    const unsubscribe = FinanceService.subscribeToUserFinanceRequests(
+      user.id,
+      (requests) => {
+        setFinanceRequests(requests)
+        setLoading(false)
+      }
+    )
 
-    setFinanceRequests(sampleRequests)
-    setLoading(false)
-
-    // In a real app, you'd set up a real-time listener like this:
-    // const q = query(
-    //   collection(db, 'financeRequests'),
-    //   where('userId', '==', user.id),
-    //   orderBy('createdAt', 'desc')
-    // )
-
-    // const unsubscribe = onSnapshot(q, (snapshot) => {
-    //   const requests = snapshot.docs.map(doc => ({
-    //     id: doc.id,
-    //     ...doc.data(),
-    //     createdAt: doc.data().createdAt?.toDate() || new Date(),
-    //     updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-    //   })) as FinanceRequest[]
-    //   setFinanceRequests(requests)
-    //   setLoading(false)
-    // })
-
-    // return unsubscribe
+    return unsubscribe
   }
 
   const getStatusIcon = (status: string) => {
@@ -158,24 +78,13 @@ export default function DashboardPage() {
 
   const acceptOffer = async (requestId: string, offerId: string) => {
     try {
-      // In a real app, you'd update the database
-      // await updateDoc(doc(db, 'financeRequests', requestId), {
-      //   status: 'accepted',
-      //   updatedAt: new Date(),
-      // })
-      
-      // Update local state for demo
-      setFinanceRequests(prev => 
-        prev.map(req => 
-          req.id === requestId 
-            ? { ...req, status: 'accepted' as const, updatedAt: new Date() }
-            : req
-        )
-      )
+      // Update the offer status to 'accepted' using the service
+      await FinanceService.updateOfferStatus(offerId, 'accepted')
       
       alert('Offer accepted! A dealer representative will contact you soon.')
     } catch (error) {
       console.error('Error accepting offer:', error)
+      alert('Error accepting offer. Please try again.')
     }
   }
 

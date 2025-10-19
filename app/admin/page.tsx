@@ -3,9 +3,12 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc } from 'firebase/firestore'
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, getDocs } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { FinanceRequest, Offer, User, Car } from '@/types'
+import { FinanceService } from '@/lib/services/financeService'
+import { CarService } from '@/lib/services/carService'
+import { EnhancedLoading } from '@/components/ui/enhanced-loading'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -39,7 +42,8 @@ export default function AdminDashboardPage() {
   const router = useRouter()
   const [financeRequests, setFinanceRequests] = useState<FinanceRequest[]>([])
   const [users, setUsers] = useState<User[]>([])
-  const [cars, setCars] = useState<Car[]>([])
+  const [cars, setCars] = useState<{ [carId: string]: Car }>({})
+  const [offers, setOffers] = useState<{ [requestId: string]: Offer[] }>({})
   const [loading, setLoading] = useState(true)
   const [selectedRequest, setSelectedRequest] = useState<FinanceRequest | null>(null)
   const [showOfferForm, setShowOfferForm] = useState(false)
@@ -59,105 +63,57 @@ export default function AdminDashboardPage() {
   }, [user, isAdmin])
 
   const fetchAdminData = () => {
-    // For demo purposes, create sample data
-    const sampleRequests: FinanceRequest[] = [
-      {
-        id: '1',
-        userId: 'user1',
-        carId: '1',
-        dealershipId: '1',
-        financeType: 'finance',
-        creditScore: 720,
-        annualIncome: 65000,
-        termLength: 60,
-        downPayment: 5000,
-        monthlyPayment: 485,
-        status: 'pending',
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-        updatedAt: new Date(),
-        offers: [],
-      },
-      {
-        id: '2',
-        userId: 'user2',
-        carId: '2',
-        dealershipId: '1',
-        financeType: 'lease',
-        creditScore: 680,
-        annualIncome: 55000,
-        termLength: 36,
-        annualMileage: 12000,
-        downPayment: 2000,
-        monthlyPayment: 395,
-        status: 'counter-offer',
-        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-        updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-        offers: [
-          {
-            id: 'o1',
-            financeRequestId: '2',
-            dealerUserId: user?.id || '',
-            monthlyPayment: 365,
-            downPayment: 3000,
-            termLength: 36,
-            interestRate: 4.5,
-            totalCost: 16140,
-            status: 'active',
-            notes: 'Better rate with higher down payment',
-            validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-            createdAt: new Date(),
-          }
-        ],
-      },
-      {
-        id: '3',
-        userId: 'user3',
-        carId: '1',
-        dealershipId: '1',
-        financeType: 'finance',
-        creditScore: 650,
-        annualIncome: 48000,
-        termLength: 72,
-        downPayment: 3000,
-        monthlyPayment: 425,
-        status: 'approved',
-        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-        updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-        offers: [],
-      },
-    ]
+    setLoading(true)
 
-    const sampleUsers: User[] = [
-      {
-        id: 'user1',
-        email: 'john@example.com',
-        name: 'John Smith',
-        role: 'user',
-        createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-        updatedAt: new Date(),
-      },
-      {
-        id: 'user2',
-        email: 'jane@example.com',
-        name: 'Jane Doe',
-        role: 'user',
-        createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
-        updatedAt: new Date(),
-      },
-      {
-        id: 'user3',
-        email: 'mike@example.com',
-        name: 'Mike Johnson',
-        role: 'user',
-        createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
-        updatedAt: new Date(),
-      },
-    ]
+    // Subscribe to all finance requests
+    const unsubscribeRequests = FinanceService.subscribeToFinanceRequests((requests) => {
+      setFinanceRequests(requests)
+      
+      // Load car data for each request
+      const carData: { [carId: string]: Car } = {}
+      requests.forEach(request => {
+        const car = CarService.getCarById(request.carId)
+        if (car) {
+          carData[request.carId] = car
+        }
+      })
+      setCars(carData)
+      setLoading(false)
+    })
 
-    setFinanceRequests(sampleRequests)
-    setUsers(sampleUsers)
-    setCars([]) // You can add sample cars if needed
-    setLoading(false)
+    // Subscribe to all offers
+    const unsubscribeOffers = FinanceService.subscribeToAllOffers((allOffers) => {
+      setOffers(allOffers)
+    })
+
+    // Fetch users from Firestore
+    const fetchUsers = async () => {
+      try {
+        const usersSnapshot = await getDocs(collection(db, 'users'))
+        const usersData: User[] = []
+        usersSnapshot.forEach((doc) => {
+          const data = doc.data()
+          usersData.push({
+            id: doc.id,
+            email: data.email,
+            name: data.name,
+            role: data.role,
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date(),
+          })
+        })
+        setUsers(usersData)
+      } catch (error) {
+        console.error('Error fetching users:', error)
+      }
+    }
+
+    fetchUsers()
+
+    return () => {
+      unsubscribeRequests()
+      unsubscribeOffers()
+    }
   }
 
   const getStatusIcon = (status: string) => {
@@ -192,22 +148,7 @@ export default function AdminDashboardPage() {
 
   const updateRequestStatus = async (requestId: string, status: FinanceRequest['status'], notes?: string) => {
     try {
-      // In a real app, you'd update the database
-      // await updateDoc(doc(db, 'financeRequests', requestId), {
-      //   status,
-      //   dealerNotes: notes,
-      //   updatedAt: new Date(),
-      // })
-
-      // Update local state for demo
-      setFinanceRequests(prev => 
-        prev.map(req => 
-          req.id === requestId 
-            ? { ...req, status, dealerNotes: notes, updatedAt: new Date() }
-            : req
-        )
-      )
-
+      await FinanceService.updateFinanceRequestStatus(requestId, status, notes)
       toast.success(`Request ${status} successfully!`)
     } catch (error) {
       console.error('Error updating request:', error)
@@ -221,7 +162,7 @@ export default function AdminDashboardPage() {
     try {
       const totalCost = (data.monthlyPayment * data.termLength) + data.downPayment
 
-      const newOffer: Omit<Offer, 'id'> = {
+      const newOffer: Omit<Offer, 'id' | 'createdAt'> = {
         financeRequestId: selectedRequest.id,
         dealerUserId: user.id,
         monthlyPayment: data.monthlyPayment,
@@ -232,26 +173,9 @@ export default function AdminDashboardPage() {
         status: 'active',
         notes: data.notes,
         validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-        createdAt: new Date(),
       }
 
-      // In a real app, you'd add to database
-      // await addDoc(collection(db, 'offers'), newOffer)
-
-      // Update local state for demo
-      const offerId = `offer_${Date.now()}`
-      setFinanceRequests(prev => 
-        prev.map(req => 
-          req.id === selectedRequest.id 
-            ? { 
-                ...req, 
-                status: 'counter-offer',
-                offers: [...req.offers, { ...newOffer, id: offerId }],
-                updatedAt: new Date()
-              }
-            : req
-        )
-      )
+      await FinanceService.createOffer(newOffer)
 
       toast.success('Counter offer created successfully!')
       setShowOfferForm(false)
@@ -264,11 +188,7 @@ export default function AdminDashboardPage() {
   }
 
   if (authLoading || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-red-600"></div>
-      </div>
-    )
+    return <EnhancedLoading message="Loading admin dashboard..." />
   }
 
   return (
@@ -341,16 +261,27 @@ export default function AdminDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {financeRequests.map((request) => {
-                const user = users.find(u => u.id === request.userId)
+              {financeRequests.map((request, index) => {
+                const requestUser = users.find(u => u.id === request.userId)
+                const car = cars[request.carId]
+                const requestOffers = offers[request.id] || []
+                const activeOffers = requestOffers.filter(offer => offer.status === 'active')
+
                 return (
-                  <div key={request.id} className="border border-gray-200 rounded-lg p-4">
+                  <div 
+                    key={request.id} 
+                    className="border border-gray-200 rounded-lg p-4 card-hover animate-fadeInUp"
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-3">
                         {getStatusIcon(request.status)}
                         <div>
-                          <h3 className="font-semibold">{user?.name || 'Unknown User'}</h3>
-                          <p className="text-sm text-gray-600">2024 Toyota Camry XLE</p>
+                          <h3 className="font-semibold">{requestUser?.name || 'Unknown User'}</h3>
+                          <p className="text-sm text-gray-600">{requestUser?.email || 'No email'}</p>
+                          <p className="text-sm text-gray-600">
+                            {car ? `${car.year} ${car.make} ${car.model} ${car.trim}` : 'Loading vehicle info...'}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-3">
@@ -377,21 +308,29 @@ export default function AdminDashboardPage() {
                         <p className="font-semibold">{formatCurrency(request.downPayment)}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Monthly Payment</p>
-                        <p className="font-semibold">{formatCurrency(request.monthlyPayment || 0)}</p>
+                        <p className="text-sm text-gray-600">Term Length</p>
+                        <p className="font-semibold">{request.termLength} months ({request.financeType})</p>
                       </div>
                     </div>
 
-                    {request.offers.length > 0 && (
+                    {activeOffers.length > 0 && (
                       <div className="mb-4 p-3 bg-blue-50 rounded-lg">
                         <h4 className="font-semibold text-blue-900 mb-2">Active Offers</h4>
-                        {request.offers.map((offer) => (
+                        {activeOffers.map((offer) => (
                           <div key={offer.id} className="text-sm text-blue-800">
                             Monthly: {formatCurrency(offer.monthlyPayment)} | 
                             Down: {formatCurrency(offer.downPayment)} | 
-                            Rate: {offer.interestRate}%
+                            Rate: {offer.interestRate}% | 
+                            Valid until: {formatDate(offer.validUntil)}
                           </div>
                         ))}
+                      </div>
+                    )}
+
+                    {request.dealerNotes && (
+                      <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                        <h4 className="font-semibold text-gray-900 mb-2">Dealer Notes</h4>
+                        <p className="text-sm text-gray-700">{request.dealerNotes}</p>
                       </div>
                     )}
 

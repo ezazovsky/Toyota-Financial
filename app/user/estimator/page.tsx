@@ -1,40 +1,22 @@
 'use client'
 import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { apiGet } from '../../../lib/api'
-import { useAuth } from '../../providers/AuthProvider'
+import { CarService } from '@/lib/services/carService'
+import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 
 type ToggleMode = 'finance' | 'lease'
 
-const MODELS = [
-  {
-    name: 'Camry',
-    trims: [
-      { name: 'LE', engines: ['2.5L I4'] },
-      { name: 'XSE', engines: ['3.5L V6'] }
-    ]
-  },
-  {
-    name: 'RAV4',
-    trims: [
-      { name: 'XLE', engines: ['2.5L I4'] },
-      { name: 'Hybrid XSE', engines: ['2.5L Hybrid'] }
-    ]
-  },
-  { name: 'Corolla', trims: [{ name: 'SE', engines: ['2.0L I4'] }] }
-]
-
 export default function Estimator() {
   const { user } = useAuth()
   const router = useRouter()
+  
   useEffect(() => {
     if (!user) router.replace('/login')
   }, [user, router])
+  
   const [mode, setMode] = useState<ToggleMode>('finance')
-  const [model, setModel] = useState<string>('')
-  const [trim, setTrim] = useState<string>('')
-  const [engine, setEngine] = useState<string>('')
+  const [selectedCarId, setSelectedCarId] = useState<string>('')
   const [zipcode, setZipcode] = useState('')
   const [dealer, setDealer] = useState<{
     id: string
@@ -42,8 +24,6 @@ export default function Estimator() {
     zip: string
     address: string
   } | null>(null)
-  const [msrp, setMsrp] = useState<number>(32000)
-  const [dph, setDph] = useState<number>(1095) // delivery, processing and handling
 
   // Right side inputs
   const [cashDown, setCashDown] = useState<number>(2000)
@@ -53,14 +33,11 @@ export default function Estimator() {
   const [annualMiles, setAnnualMiles] = useState<number>(12000)
   const [localOffer, setLocalOffer] = useState<500 | 0>(0)
 
-  const selectedModel = useMemo(
-    () => MODELS.find(m => m.name === model),
-    [model]
-  )
-  const selectedTrim = useMemo(
-    () => selectedModel?.trims.find(t => t.name === trim),
-    [selectedModel, trim]
-  )
+  const availableCars = CarService.getAllCars()
+  const selectedCar = selectedCarId ? CarService.getCarById(selectedCarId) : null
+  
+  const msrp = selectedCar?.basePrice || 32000
+  const dph = 1095 // delivery, processing and handling
 
   const apr = useMemo(() => {
     // fake APR based on credit tier
@@ -105,57 +82,18 @@ export default function Estimator() {
         {/* Vehicle selector card */}
         <div className='space-y-4 rounded-lg border p-4'>
           <h2 className='text-lg font-medium'>Select your vehicle</h2>
-          <div className='grid gap-3 sm:grid-cols-2'>
+          <div className='grid gap-3 sm:grid-cols-1'>
             <div>
-              <label className='mb-1 block text-sm'>Model</label>
+              <label className='mb-1 block text-sm'>Vehicle</label>
               <select
                 className='w-full rounded-md border px-3 py-2'
-                value={model}
-                onChange={e => {
-                  setModel(e.target.value)
-                  setTrim('')
-                  setEngine('')
-                }}
+                value={selectedCarId}
+                onChange={e => setSelectedCarId(e.target.value)}
               >
-                <option value=''>Choose model</option>
-                {MODELS.map(m => (
-                  <option key={m.name} value={m.name}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className='mb-1 block text-sm'>Trim</label>
-              <select
-                className='w-full rounded-md border px-3 py-2'
-                value={trim}
-                onChange={e => {
-                  setTrim(e.target.value)
-                  setEngine('')
-                }}
-                disabled={!model}
-              >
-                <option value=''>Choose trim</option>
-                {selectedModel?.trims.map(t => (
-                  <option key={t.name} value={t.name}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className='mb-1 block text-sm'>Engine</label>
-              <select
-                className='w-full rounded-md border px-3 py-2'
-                value={engine}
-                onChange={e => setEngine(e.target.value)}
-                disabled={!trim}
-              >
-                <option value=''>Choose engine</option>
-                {selectedTrim?.engines.map(e => (
-                  <option key={e} value={e}>
-                    {e}
+                <option value=''>Choose vehicle</option>
+                {availableCars.map(car => (
+                  <option key={car.id} value={car.id}>
+                    {car.year} {car.make} {car.model} {car.trim} - ${car.basePrice.toLocaleString()}
                   </option>
                 ))}
               </select>
@@ -166,21 +104,20 @@ export default function Estimator() {
                 <input
                   value={zipcode}
                   onChange={e => setZipcode(e.target.value)}
-                  placeholder='e.g., 98052'
+                  placeholder='e.g., 78701'
                   className='w-full rounded-md border px-3 py-2'
                 />
                 <button
                   type='button'
-                  onClick={async () => {
+                  onClick={() => {
                     if (!zipcode) return
-                    try {
-                      const res = await apiGet<any[]>(
-                        `/dealerships?zip=${encodeURIComponent(zipcode)}`
-                      )
-                      setDealer(res[0] || null)
-                    } catch (e) {
-                      setDealer(null)
-                    }
+                    // For demo purposes, set a sample dealer
+                    setDealer({
+                      id: 'demo-dealer',
+                      name: 'Toyota of Austin',
+                      zip: zipcode,
+                      address: `1234 Main St, Austin, TX ${zipcode}`
+                    })
                   }}
                   className='rounded-md border px-3 py-2 text-sm whitespace-nowrap'
                 >
@@ -195,26 +132,28 @@ export default function Estimator() {
               )}
             </div>
           </div>
-          <div className='grid gap-3 sm:grid-cols-2'>
-            <div>
-              <label className='mb-1 block text-sm'>MSRP</label>
-              <input
-                type='number'
-                value={msrp}
-                onChange={e => setMsrp(Number(e.target.value) || 0)}
-                className='w-full rounded-md border px-3 py-2'
-              />
+          {selectedCar && (
+            <div className='grid gap-3 sm:grid-cols-2'>
+              <div>
+                <label className='mb-1 block text-sm'>MSRP</label>
+                <input
+                  type='number'
+                  value={msrp}
+                  readOnly
+                  className='w-full rounded-md border px-3 py-2 bg-gray-50'
+                />
+              </div>
+              <div>
+                <label className='mb-1 block text-sm'>DPH</label>
+                <input
+                  type='number'
+                  value={dph}
+                  readOnly
+                  className='w-full rounded-md border px-3 py-2 bg-gray-50'
+                />
+              </div>
             </div>
-            <div>
-              <label className='mb-1 block text-sm'>DPH</label>
-              <input
-                type='number'
-                value={dph}
-                onChange={e => setDph(Number(e.target.value) || 0)}
-                className='w-full rounded-md border px-3 py-2'
-              />
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Selected car summary */}
@@ -223,11 +162,10 @@ export default function Estimator() {
             <div className='h-24 w-40 rounded-md bg-neutral-100' />
             <div>
               <div className='text-lg font-semibold'>
-                {model || 'Model'}
-                {trim ? ` ${trim}` : ''}
+                {selectedCar ? `${selectedCar.year} ${selectedCar.make} ${selectedCar.model} ${selectedCar.trim}` : 'Select a Vehicle'}
               </div>
               <div className='text-sm text-neutral-600'>
-                {engine || 'Engine'}
+                {selectedCar ? selectedCar.specifications.engine : 'No vehicle selected'}
               </div>
               <div className='text-sm'>
                 MSRP + DPH:{' '}

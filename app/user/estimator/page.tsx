@@ -1,5 +1,6 @@
 'use client'
 import React, { useEffect, useMemo, useState } from 'react'
+import { useCarPackages, useAllPackages } from '@/hooks/useCarPackages'
 import Link from 'next/link'
 import { CarService } from '@/lib/services/carService'
 import { useAuth } from '@/contexts/AuthContext'
@@ -10,11 +11,11 @@ type ToggleMode = 'finance' | 'lease'
 export default function Estimator() {
   const { user } = useAuth()
   const router = useRouter()
-  
+
   useEffect(() => {
     if (!user) router.replace('/login')
   }, [user, router])
-  
+
   const [mode, setMode] = useState<ToggleMode>('finance')
   const [selectedCarId, setSelectedCarId] = useState<string>('')
   const [zipcode, setZipcode] = useState('')
@@ -34,49 +35,178 @@ export default function Estimator() {
   const [localOffer, setLocalOffer] = useState<500 | 0>(0)
 
   const availableCars = CarService.getAllCars()
-  const selectedCar = selectedCarId ? CarService.getCarById(selectedCarId) : null
-  
+  const selectedCar = selectedCarId
+    ? CarService.getCarById(selectedCarId)
+    : null
+
+  // Get all packages and filter for those that apply to the selected car
+  const { packages: allPackages, loading: packagesLoading } = useAllPackages()
+  // Scoring-based best package selection
+  function getBestScoredPackage(planType: 'finance' | 'lease') {
+    if (!selectedCar) return null
+    // Only consider packages that apply to this car
+    const eligible = allPackages.filter(pkg => {
+      if (!pkg.isActive || pkg.planType !== planType) return false
+      if (pkg.appliesTo.type === 'all') return true
+      if (
+        pkg.appliesTo.type === 'model' &&
+        pkg.appliesTo.value === selectedCar.model
+      )
+        return true
+      if (
+        pkg.appliesTo.type === 'trim' &&
+        pkg.appliesTo.value === selectedCar.trim
+      )
+        return true
+      if (
+        pkg.appliesTo.type === 'car' &&
+        pkg.appliesTo.value === selectedCar.id
+      )
+        return true
+      return false
+    })
+    if (eligible.length === 0) return null
+    // Scoring weights (tune as needed)
+    const wTerm = 1,
+      wDown = 0.5,
+      wRate = 10,
+      wMiles = 0.05
+    const customerTerm = term
+    const customerDown = cashDown
+    const customerRate =
+      credit >= 760 ? 2.9 : credit >= 700 ? 3.9 : credit >= 640 ? 5.9 : 9.9
+    const customerMiles = annualMiles
+    let best = eligible[0]
+    let bestScore = Infinity
+    for (const pkg of eligible) {
+      let score = 0
+      score += wTerm * Math.abs(customerTerm - pkg.term)
+      score += wDown * Math.abs(customerDown - pkg.downPayment)
+      score += wRate * Math.abs((pkg.rate ?? 0) - customerRate)
+      if (planType === 'lease' && pkg.mileage)
+        score += wMiles * Math.abs(customerMiles - pkg.mileage)
+      // Prefer more specific appliesTo (car < trim < model < all)
+      if (pkg.appliesTo.type === 'car') score -= 2
+      else if (pkg.appliesTo.type === 'trim') score -= 1
+      // Lower score is better
+      if (score < bestScore) {
+        best = pkg
+        bestScore = score
+      }
+    }
+    return best
+  }
+
+  const bestFinancePackage = getBestScoredPackage('finance')
+  const bestLeasePackage = getBestScoredPackage('lease')
+
+  // Use the best package for the current mode
+  const selectedPackage =
+    mode === 'finance' ? bestFinancePackage : bestLeasePackage
+
   const msrp = selectedCar?.basePrice || 32000
   const dph = 1095 // delivery, processing and handling
 
+  // If a package is selected, use its rate/term/downPayment/mileage
   const apr = useMemo(() => {
-    // fake APR based on credit tier
+    if (selectedPackage && selectedPackage.planType === mode)
+      return selectedPackage.rate
     if (credit >= 760) return 2.9
     if (credit >= 700) return 3.9
     if (credit >= 640) return 5.9
     return 9.9
-  }, [credit])
+  }, [credit, selectedPackage, mode])
+
+  const effectiveTerm =
+    selectedPackage && selectedPackage.planType === mode
+      ? selectedPackage.term
+      : term
+  const effectiveDown =
+    selectedPackage && selectedPackage.planType === mode
+      ? selectedPackage.downPayment
+      : cashDown
+  const effectiveMiles =
+    selectedPackage && selectedPackage.planType === 'lease' && mode === 'lease'
+      ? selectedPackage.mileage || annualMiles
+      : annualMiles
 
   const capCost = useMemo(
-    () => Math.max(0, msrp + dph - cashDown - tradeIn - localOffer),
-    [msrp, dph, cashDown, tradeIn, localOffer]
+    () => Math.max(0, msrp + dph - effectiveDown - tradeIn - localOffer),
+    [msrp, dph, effectiveDown, tradeIn, localOffer]
   )
 
   const monthly = useMemo(() => {
     // very simplified finance calculator: M = P * (r(1+r)^n)/((1+r)^n - 1)
     const r = apr / 100 / 12
-    const n = term
+    const n = effectiveTerm
     const P = capCost
     if (r === 0) return P / n
     const M = (P * (r * Math.pow(1 + r, n))) / (Math.pow(1 + r, n) - 1)
     return M
-  }, [apr, term, capCost])
+  }, [apr, effectiveTerm, capCost])
 
   const leaseMonthly = useMemo(() => {
     // extremely simplified lease: (cap - residual)/term + rent charge
-    const residualRate = 0.6 - Math.max(0, term - 24) * 0.003 // rough, for demo
+    const residualRate = 0.6 - Math.max(0, effectiveTerm - 24) * 0.003 // rough, for demo
     const residual = msrp * Math.max(0.45, residualRate)
     const moneyFactor = apr / 100 / 2400
     const base =
-      Math.max(0, capCost - residual) / Math.max(24, Math.min(60, term))
+      Math.max(0, capCost - residual) /
+      Math.max(24, Math.min(60, effectiveTerm))
     const rent = (capCost + residual) * moneyFactor
     return base + rent
-  }, [capCost, msrp, apr, term])
+  }, [capCost, msrp, apr, effectiveTerm])
 
   const estPayment = mode === 'finance' ? monthly : leaseMonthly
 
   return (
     <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+      {/* Closest Matching Package Display */}
+      {selectedCar && (
+        <div className='mb-4'>
+          <h3 className='mb-2 text-lg font-semibold'>
+            Best {mode === 'finance' ? 'Finance' : 'Lease'} Package
+          </h3>
+          {packagesLoading ? (
+            <div className='text-gray-500'>Loading packages...</div>
+          ) : !selectedPackage ? (
+            <div className='text-gray-500'>
+              No package available for this vehicle.
+            </div>
+          ) : (
+            <div className='w-72 rounded-lg border border-red-400 bg-red-50 p-4'>
+              <div className='mb-1 font-bold text-red-700'>
+                {selectedPackage.name}
+              </div>
+              <div className='mb-1 text-xs text-gray-600'>
+                {selectedPackage.description}
+              </div>
+              <div className='mb-1 text-sm'>
+                Term: <b>{selectedPackage.term}</b> mo | Rate:{' '}
+                <b>{selectedPackage.rate}%</b>
+              </div>
+              {selectedPackage.planType === 'lease' && (
+                <div className='mb-1 text-sm'>
+                  Mileage:{' '}
+                  <b>{selectedPackage.mileage?.toLocaleString() || 'N/A'}</b>{' '}
+                  /yr
+                </div>
+              )}
+              <div className='mb-2 text-xs text-gray-700'>
+                Down: ${selectedPackage.downPayment.toLocaleString()}
+              </div>
+              <ul className='mb-2 text-xs text-gray-500'>
+                {(selectedPackage.features ?? []).map((f, i) => (
+                  <li key={i}>• {f}</li>
+                ))}
+              </ul>
+              <div className='text-xs font-semibold text-red-700'>
+                Auto-selected for you
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       {/* Left sticky summary and selectors */}
       <div className='md:sticky md:top-20 md:h-[calc(100vh-140px)] md:overflow-hidden'>
         {/* Vehicle selector card */}
@@ -93,7 +223,8 @@ export default function Estimator() {
                 <option value=''>Choose vehicle</option>
                 {availableCars.map(car => (
                   <option key={car.id} value={car.id}>
-                    {car.year} {car.make} {car.model} {car.trim} - ${car.basePrice.toLocaleString()}
+                    {car.year} {car.make} {car.model} {car.trim} - $
+                    {car.basePrice.toLocaleString()}
                   </option>
                 ))}
               </select>
@@ -140,7 +271,7 @@ export default function Estimator() {
                   type='number'
                   value={msrp}
                   readOnly
-                  className='w-full rounded-md border px-3 py-2 bg-gray-50'
+                  className='w-full rounded-md border bg-gray-50 px-3 py-2'
                 />
               </div>
               <div>
@@ -149,7 +280,7 @@ export default function Estimator() {
                   type='number'
                   value={dph}
                   readOnly
-                  className='w-full rounded-md border px-3 py-2 bg-gray-50'
+                  className='w-full rounded-md border bg-gray-50 px-3 py-2'
                 />
               </div>
             </div>
@@ -162,10 +293,14 @@ export default function Estimator() {
             <div className='h-24 w-40 rounded-md bg-neutral-100' />
             <div>
               <div className='text-lg font-semibold'>
-                {selectedCar ? `${selectedCar.year} ${selectedCar.make} ${selectedCar.model} ${selectedCar.trim}` : 'Select a Vehicle'}
+                {selectedCar
+                  ? `${selectedCar.year} ${selectedCar.make} ${selectedCar.model} ${selectedCar.trim}`
+                  : 'Select a Vehicle'}
               </div>
               <div className='text-sm text-neutral-600'>
-                {selectedCar ? selectedCar.specifications.engine : 'No vehicle selected'}
+                {selectedCar
+                  ? selectedCar.specifications.engine
+                  : 'No vehicle selected'}
               </div>
               <div className='text-sm'>
                 MSRP + DPH:{' '}

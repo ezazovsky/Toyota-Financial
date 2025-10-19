@@ -1,21 +1,40 @@
+export interface CreatePackageData {
+  carId?: string
+  appliesTo: AppliesTo
+  name: string
+  description: string
+  price: number
+  features: string[]
+  isActive?: boolean
+  planType: 'lease' | 'finance'
+  term: number
+  rate: number
+  downPayment: number
+  mileage?: number
+}
+export type AppliesTo = {
+  type: 'all' | 'model' | 'trim' | 'car'
+  value?: string
+}
 // lib/services/packageService.ts
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
   where,
-  serverTimestamp 
+  serverTimestamp
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
 export interface CarPackage {
   id: string
-  carId: string
+  carId?: string
+  appliesTo: AppliesTo
   name: string
   description: string
   price: number
@@ -23,15 +42,31 @@ export interface CarPackage {
   isActive: boolean
   createdAt: Date
   updatedAt: Date
+  planType: 'lease' | 'finance'
+  term: number
+  rate: number
+  downPayment: number
+  mileage?: number
 }
 
-export interface CreatePackageData {
-  carId: string
-  name: string
-  description: string
-  price: number
-  features: string[]
-  isActive?: boolean
+type FirestoreTimestamp = { toDate: () => Date }
+
+// Raw shape from Firestore with some unknowns we normalize below
+interface FirebasePackageRaw {
+  carId?: string
+  appliesTo?: AppliesTo
+  name?: string
+  description?: string
+  price?: number
+  features?: unknown
+  isActive?: unknown
+  createdAt?: FirestoreTimestamp | Date
+  updatedAt?: FirestoreTimestamp | Date
+  planType?: 'lease' | 'finance'
+  term?: number
+  rate?: number
+  downPayment?: number
+  mileage?: number
 }
 
 export class PackageService {
@@ -42,18 +77,32 @@ export class PackageService {
     try {
       const packagesRef = collection(db, this.COLLECTION_NAME)
       const q = query(
-        packagesRef, 
+        packagesRef,
         where('carId', '==', carId),
         where('isActive', '==', true)
       )
       const snapshot = await getDocs(q)
-      
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date()
-      })) as CarPackage[]
+
+      return snapshot.docs.map(d => {
+        const data = d.data() as FirebasePackageRaw
+        return {
+          id: d.id,
+          ...data,
+          appliesTo: data.appliesTo ?? { type: 'all' },
+          features: Array.isArray(data.features)
+            ? (data.features as string[])
+            : [],
+          isActive: typeof data.isActive === 'boolean' ? (data.isActive as boolean) : true,
+          createdAt:
+            data.createdAt && typeof (data.createdAt as FirestoreTimestamp).toDate === 'function'
+              ? (data.createdAt as FirestoreTimestamp).toDate()
+              : (data.createdAt as Date) || new Date(),
+          updatedAt:
+            data.updatedAt && typeof (data.updatedAt as FirestoreTimestamp).toDate === 'function'
+              ? (data.updatedAt as FirestoreTimestamp).toDate()
+              : (data.updatedAt as Date) || new Date()
+        }
+      }) as CarPackage[]
     } catch (error) {
       console.error('Error fetching packages for car:', error)
       return []
@@ -64,13 +113,27 @@ export class PackageService {
     try {
       const packagesRef = collection(db, this.COLLECTION_NAME)
       const snapshot = await getDocs(packagesRef)
-      
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date()
-      })) as CarPackage[]
+
+      return snapshot.docs.map(d => {
+        const data = d.data() as FirebasePackageRaw
+        return {
+          id: d.id,
+          ...data,
+          appliesTo: data.appliesTo ?? { type: 'all' },
+          features: Array.isArray(data.features)
+            ? (data.features as string[])
+            : [],
+          isActive: typeof data.isActive === 'boolean' ? (data.isActive as boolean) : true,
+          createdAt:
+            data.createdAt && typeof (data.createdAt as FirestoreTimestamp).toDate === 'function'
+              ? (data.createdAt as FirestoreTimestamp).toDate()
+              : (data.createdAt as Date) || new Date(),
+          updatedAt:
+            data.updatedAt && typeof (data.updatedAt as FirestoreTimestamp).toDate === 'function'
+              ? (data.updatedAt as FirestoreTimestamp).toDate()
+              : (data.updatedAt as Date) || new Date()
+        }
+      }) as CarPackage[]
     } catch (error) {
       console.error('Error fetching all packages:', error)
       return []
@@ -81,17 +144,28 @@ export class PackageService {
     try {
       const packageRef = doc(db, this.COLLECTION_NAME, packageId)
       const packageDoc = await getDoc(packageRef)
-      
+
       if (!packageDoc.exists()) {
         return null
       }
 
-      const data = packageDoc.data()
+      const data = packageDoc.data() as FirebasePackageRaw
       return {
         id: packageDoc.id,
         ...data,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date()
+        appliesTo: data.appliesTo ?? { type: 'all' },
+        features: Array.isArray(data.features)
+          ? (data.features as string[])
+          : [],
+        isActive: typeof data.isActive === 'boolean' ? (data.isActive as boolean) : true,
+        createdAt:
+          data.createdAt && typeof (data.createdAt as FirestoreTimestamp).toDate === 'function'
+            ? (data.createdAt as FirestoreTimestamp).toDate()
+            : (data.createdAt as Date) || new Date(),
+        updatedAt:
+          data.updatedAt && typeof (data.updatedAt as FirestoreTimestamp).toDate === 'function'
+            ? (data.updatedAt as FirestoreTimestamp).toDate()
+            : (data.updatedAt as Date) || new Date()
       } as CarPackage
     } catch (error) {
       console.error('Error fetching package:', error)
@@ -99,7 +173,9 @@ export class PackageService {
     }
   }
 
-  static async createPackage(packageData: CreatePackageData): Promise<string | null> {
+  static async createPackage(
+    packageData: CreatePackageData
+  ): Promise<string | null> {
     try {
       const newPackage = {
         ...packageData,
@@ -108,7 +184,10 @@ export class PackageService {
         updatedAt: serverTimestamp()
       }
 
-      const docRef = await addDoc(collection(db, this.COLLECTION_NAME), newPackage)
+      const docRef = await addDoc(
+        collection(db, this.COLLECTION_NAME),
+        newPackage
+      )
       return docRef.id
     } catch (error) {
       console.error('Error creating package:', error)
@@ -116,7 +195,10 @@ export class PackageService {
     }
   }
 
-  static async updatePackage(packageId: string, updates: Partial<CreatePackageData>): Promise<boolean> {
+  static async updatePackage(
+    packageId: string,
+    updates: Partial<CreatePackageData>
+  ): Promise<boolean> {
     try {
       const packageRef = doc(db, this.COLLECTION_NAME, packageId)
       const updateData = {
@@ -165,38 +247,82 @@ export class PackageService {
         return
       }
 
-      const camryPackages: CreatePackageData[] = [
+      // 5 default packages for all vehicles
+      const defaultPackages: CreatePackageData[] = [
         {
-          carId: '1',
-          name: 'Premium Package',
-          description: 'Leather seats, sunroof, premium audio',
-          price: 2500,
-          features: [
-            'Leather-appointed seating',
-            'Power moonroof',
-            'Premium JBL audio',
-            'Wireless charging'
-          ]
+          appliesTo: { type: 'all' },
+          name: 'Standard Finance',
+          description: '60-month finance plan with competitive rate',
+          price: 0,
+          features: ['60 months', 'Competitive APR', 'No prepayment penalty'],
+          planType: 'finance',
+          term: 60,
+          rate: 3.9,
+          downPayment: 2000
         },
         {
-          carId: '1',
-          name: 'Technology Package',
-          description: 'Advanced safety and tech features',
-          price: 1800,
+          appliesTo: { type: 'all' },
+          name: 'Short-Term Finance',
+          description: '36-month finance plan for faster payoff',
+          price: 0,
+          features: ['36 months', 'Lower total interest', 'Flexible terms'],
+          planType: 'finance',
+          term: 36,
+          rate: 3.5,
+          downPayment: 3000
+        },
+        {
+          appliesTo: { type: 'all' },
+          name: 'Standard Lease',
+          description: '36-month lease, 12,000 miles/year',
+          price: 0,
+          features: ['36 months', '12,000 miles/year', 'Low monthly payment'],
+          planType: 'lease',
+          term: 36,
+          rate: 2.9,
+          downPayment: 1500,
+          mileage: 12000
+        },
+        {
+          appliesTo: { type: 'all' },
+          name: 'High Mileage Lease',
+          description:
+            '36-month lease, 15,000 miles/year for high-mileage drivers',
+          price: 0,
           features: [
-            'Adaptive cruise control',
-            '10-inch touchscreen',
-            'Head-up display',
-            'Blind spot monitoring'
-          ]
+            '36 months',
+            '15,000 miles/year',
+            'Flexible return options'
+          ],
+          planType: 'lease',
+          term: 36,
+          rate: 3.1,
+          downPayment: 1800,
+          mileage: 15000
+        },
+        {
+          appliesTo: { type: 'all' },
+          name: 'Ultra Low Payment Lease',
+          description: '24-month lease, lowest monthly payment',
+          price: 0,
+          features: [
+            '24 months',
+            '10,000 miles/year',
+            'Lowest monthly payment'
+          ],
+          planType: 'lease',
+          term: 24,
+          rate: 2.5,
+          downPayment: 1000,
+          mileage: 10000
         }
       ]
 
-      for (const packageData of camryPackages) {
+      for (const packageData of defaultPackages) {
         await this.createPackage(packageData)
       }
 
-      console.log('Successfully seeded car packages')
+      console.log('Successfully seeded default car packages')
     } catch (error) {
       console.error('Error seeding packages:', error)
     }

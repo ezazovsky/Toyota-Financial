@@ -21,7 +21,7 @@ import {
 export default function VehicleDetailPage() {
   const params = useParams()
   const carId = params.id as string
-  const { car, loading, error } = useCar(carId)
+  const { car, loading } = useCar(carId)
   const { packages, loading: packagesLoading } = useCarPackages(carId)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
 
@@ -64,9 +64,9 @@ export default function VehicleDetailPage() {
       </div>
 
       <div className='mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8'>
-        <div className='grid grid-cols-1 gap-8 lg:grid-cols-2'>
+        <div className='flex w-full flex-col items-center justify-center'>
           {/* Vehicle Images and Info */}
-          <div>
+          <div className='w-full max-w-2xl'>
             {/* Main Image */}
             <div className='relative mb-4 h-96 overflow-hidden rounded-lg bg-gray-200'>
               <Image
@@ -112,7 +112,7 @@ export default function VehicleDetailPage() {
             {/* Vehicle Info */}
             <Card>
               <CardHeader>
-                <CardTitle className='text-2xl'>
+                <CardTitle className='text-center text-2xl'>
                   {car.year} {car.make} {car.model} {car.trim}
                 </CardTitle>
                 <div className='text-3xl font-bold text-red-600'>
@@ -181,7 +181,7 @@ export default function VehicleDetailPage() {
                             {pkg.description}
                           </p>
                           <ul className='space-y-1 text-xs text-gray-500'>
-                            {pkg.features.map((feature, index) => (
+                            {(pkg.features ?? []).map((feature, index) => (
                               <li key={index}>• {feature}</li>
                             ))}
                           </ul>
@@ -190,40 +190,46 @@ export default function VehicleDetailPage() {
                     </div>
                   </div>
                 )}
-                
+
                 {packagesLoading && (
                   <div>
                     <h3 className='mb-3 text-lg font-semibold'>
                       Available Packages
                     </h3>
-                    <div className="animate-pulse">
-                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                    <div className='animate-pulse'>
+                      <div className='mb-2 h-4 w-3/4 rounded bg-gray-200'></div>
+                      <div className='h-4 w-1/2 rounded bg-gray-200'></div>
                     </div>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quick Actions */}
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Get Started</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="space-y-3">
-                    <Link href={`/vehicles/${car.id}/finance`} className='block'>
-                      <Button size='lg' className='w-full'>
-                        Leasing or Financing Options
-                      </Button>
-                    </Link>
-                    <Button size='lg' variant='outline' className='w-full'>
-                      Schedule Test Drive
-                    </Button>
-                  </div>
+                {/* Quick Actions */}
+                <div>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Get Started</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className='space-y-4'>
+                        <div className='space-y-3'>
+                          <Link
+                            href={`/vehicles/${car.id}/finance`}
+                            className='block'
+                          >
+                            <Button size='lg' className='w-full'>
+                              Leasing or Financing Options
+                            </Button>
+                          </Link>
+                          <Button
+                            size='lg'
+                            variant='outline'
+                            className='w-full'
+                          >
+                            Schedule Test Drive
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </CardContent>
             </Card>

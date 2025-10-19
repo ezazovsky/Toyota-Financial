@@ -118,20 +118,20 @@ export default function Home() {
                 <Shield className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Trusted Service</h3>
-              <p className="text-gray-600">Over 50 years of automotive financing experience</p>
+              <p className="text-gray-600">Over 80 years of automotive financing experience</p>
             </div>
             <div className="text-center">
               <div className="mx-auto h-16 w-16 bg-red-600 rounded-full flex items-center justify-center mb-4">
                 <Award className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Award Winning</h3>
-              <p className="text-gray-600">Recognized for excellence in customer satisfaction</p>
+              <p className="text-gray-600">2024 KBB Best Resale Value Award <br />2023 KBB Most Trusted Car Brand <br />2023 KBB Best Overall Truck Brand <br />2023 KBB Best Overall Truck Brand</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Search Section */}
+      {/* Search Section
       <section className="py-8 bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative max-w-md mx-auto">
@@ -145,10 +145,10 @@ export default function Home() {
             />
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Cars Grid */}
-      <section className="py-16">
+      <section className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">

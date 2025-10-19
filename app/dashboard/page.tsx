@@ -29,7 +29,6 @@ export default function DashboardPage() {
   const fetchFinanceRequests = () => {
     if (!user) return
 
-    // Use the FinanceService to subscribe to user's finance requests
     const unsubscribe = FinanceService.subscribeToUserFinanceRequests(
       user.id,
       (requests) => {
@@ -73,7 +72,6 @@ export default function DashboardPage() {
 
   const acceptOffer = async (requestId: string, offerId: string) => {
     try {
-      // Update the offer status to 'accepted' using the service
       await FinanceService.updateOfferStatus(offerId, 'accepted')
       
       alert('Offer accepted! A dealer representative will contact you soon.')

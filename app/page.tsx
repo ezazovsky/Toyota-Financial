@@ -25,15 +25,13 @@ export default function Home() {
 
   const fetchNewestCars = async () => {
     try {
-      // For demo purposes, create sample cars if none exist
       const carsRef = collection(db, 'cars')
       const q = query(carsRef, orderBy('createdAt', 'desc'), limit(6))
       const snapshot = await getDocs(q)
       
       if (snapshot.empty) {
-        // Use centralized CarService instead of hardcoded data
         const allCars = CarService.getAllCars()
-        setCars(allCars.slice(0, 6)) // Get first 6 cars
+        setCars(allCars.slice(0, 6)) 
       } else {
         const carsData = snapshot.docs.map(doc => ({
           id: doc.id,
@@ -45,7 +43,6 @@ export default function Home() {
     } catch (error) {
       console.error('Error fetching cars:', error)
       setError('Failed to load vehicles. Please try again.')
-      // Fallback to centralized CarService on error
       const allCars = CarService.getAllCars()
       setCars(allCars.slice(0, 6))
     } finally {
@@ -59,7 +56,6 @@ export default function Home() {
     
     const carText = `${car.make} ${car.model} ${car.trim} ${car.year} ${car.specifications.bodyStyle}`.toLowerCase()
     
-    // Handle multi-word searches by splitting on spaces
     const searchWords = searchQuery.split(/\s+/)
     return searchWords.every(word => 
       carText.includes(word) || 
@@ -96,9 +92,11 @@ export default function Home() {
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
-              <Button size="lg" variant="ghost" className="text-white border-white hover:bg-red-800">
-                Calculate Payment
-              </Button>
+              <Link href="/quiz">
+                <Button size="lg" variant="ghost" className="text-white border-white hover:bg-red-800">
+                  Lease or Finance Quiz
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

@@ -65,11 +65,9 @@ export default function AdminDashboardPage() {
   const fetchAdminData = () => {
     setLoading(true)
 
-    // Subscribe to all finance requests
     const unsubscribeRequests = FinanceService.subscribeToFinanceRequests((requests) => {
       setFinanceRequests(requests)
       
-      // Load car data for each request
       const carData: { [carId: string]: Car } = {}
       requests.forEach(request => {
         const car = CarService.getCarById(request.carId)
@@ -81,12 +79,10 @@ export default function AdminDashboardPage() {
       setLoading(false)
     })
 
-    // Subscribe to all offers
     const unsubscribeOffers = FinanceService.subscribeToAllOffers((allOffers) => {
       setOffers(allOffers)
     })
 
-    // Fetch users from Firestore
     const fetchUsers = async () => {
       try {
         const usersSnapshot = await getDocs(collection(db, 'users'))
@@ -254,7 +250,6 @@ export default function AdminDashboardPage() {
           </Card>
         </div>
 
-        {/* Finance Requests Table */}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle>Finance Applications</CardTitle>
@@ -384,7 +379,6 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Offer Form Modal */}
         {showOfferForm && selectedRequest && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <Card className="w-full max-w-md m-4">

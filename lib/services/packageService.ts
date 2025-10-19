@@ -69,6 +69,29 @@ interface FirebasePackageRaw {
   mileage?: number
 }
 
+// Payload types for Firestore writes
+type FirestoreCreatePackagePayload = {
+  appliesTo: AppliesTo
+  name: string
+  description: string
+  price: number
+  features: string[]
+  isActive: boolean
+  planType: 'lease' | 'finance'
+  term: number
+  rate: number
+  downPayment: number
+  createdAt: ReturnType<typeof serverTimestamp>
+  updatedAt: ReturnType<typeof serverTimestamp>
+  carId?: string
+  mileage?: number
+}
+
+type FirestoreUpdatePackagePayload =
+  Partial<Omit<FirestoreCreatePackagePayload, 'createdAt'>> & {
+    updatedAt: ReturnType<typeof serverTimestamp>
+  }
+
 export class PackageService {
   private static COLLECTION_NAME = 'carPackages'
 
@@ -92,13 +115,18 @@ export class PackageService {
           features: Array.isArray(data.features)
             ? (data.features as string[])
             : [],
-          isActive: typeof data.isActive === 'boolean' ? (data.isActive as boolean) : true,
+          isActive:
+            typeof data.isActive === 'boolean'
+              ? (data.isActive as boolean)
+              : true,
           createdAt:
-            data.createdAt && typeof (data.createdAt as FirestoreTimestamp).toDate === 'function'
+            data.createdAt &&
+            typeof (data.createdAt as FirestoreTimestamp).toDate === 'function'
               ? (data.createdAt as FirestoreTimestamp).toDate()
               : (data.createdAt as Date) || new Date(),
           updatedAt:
-            data.updatedAt && typeof (data.updatedAt as FirestoreTimestamp).toDate === 'function'
+            data.updatedAt &&
+            typeof (data.updatedAt as FirestoreTimestamp).toDate === 'function'
               ? (data.updatedAt as FirestoreTimestamp).toDate()
               : (data.updatedAt as Date) || new Date()
         }
@@ -123,13 +151,18 @@ export class PackageService {
           features: Array.isArray(data.features)
             ? (data.features as string[])
             : [],
-          isActive: typeof data.isActive === 'boolean' ? (data.isActive as boolean) : true,
+          isActive:
+            typeof data.isActive === 'boolean'
+              ? (data.isActive as boolean)
+              : true,
           createdAt:
-            data.createdAt && typeof (data.createdAt as FirestoreTimestamp).toDate === 'function'
+            data.createdAt &&
+            typeof (data.createdAt as FirestoreTimestamp).toDate === 'function'
               ? (data.createdAt as FirestoreTimestamp).toDate()
               : (data.createdAt as Date) || new Date(),
           updatedAt:
-            data.updatedAt && typeof (data.updatedAt as FirestoreTimestamp).toDate === 'function'
+            data.updatedAt &&
+            typeof (data.updatedAt as FirestoreTimestamp).toDate === 'function'
               ? (data.updatedAt as FirestoreTimestamp).toDate()
               : (data.updatedAt as Date) || new Date()
         }
@@ -157,13 +190,18 @@ export class PackageService {
         features: Array.isArray(data.features)
           ? (data.features as string[])
           : [],
-        isActive: typeof data.isActive === 'boolean' ? (data.isActive as boolean) : true,
+        isActive:
+          typeof data.isActive === 'boolean'
+            ? (data.isActive as boolean)
+            : true,
         createdAt:
-          data.createdAt && typeof (data.createdAt as FirestoreTimestamp).toDate === 'function'
+          data.createdAt &&
+          typeof (data.createdAt as FirestoreTimestamp).toDate === 'function'
             ? (data.createdAt as FirestoreTimestamp).toDate()
             : (data.createdAt as Date) || new Date(),
         updatedAt:
-          data.updatedAt && typeof (data.updatedAt as FirestoreTimestamp).toDate === 'function'
+          data.updatedAt &&
+          typeof (data.updatedAt as FirestoreTimestamp).toDate === 'function'
             ? (data.updatedAt as FirestoreTimestamp).toDate()
             : (data.updatedAt as Date) || new Date()
       } as CarPackage
@@ -177,11 +215,35 @@ export class PackageService {
     packageData: CreatePackageData
   ): Promise<string | null> {
     try {
-      const newPackage = {
-        ...packageData,
+      // Omit undefined fields to satisfy Firestore constraints
+      const appliesToClean: AppliesTo =
+        packageData.appliesTo.value === undefined
+          ? { type: packageData.appliesTo.type }
+          : {
+              type: packageData.appliesTo.type,
+              value: packageData.appliesTo.value
+            }
+
+      // Build payload explicitly to avoid undefined fields
+      const newPackage: FirestoreCreatePackagePayload = {
+        appliesTo: appliesToClean,
+        name: packageData.name,
+        description: packageData.description,
+        price: packageData.price,
+        features: Array.isArray(packageData.features)
+          ? packageData.features
+          : [],
         isActive: packageData.isActive ?? true,
+        planType: packageData.planType,
+        term: packageData.term,
+        rate: packageData.rate,
+        downPayment: packageData.downPayment,
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
+        ...(packageData.carId ? { carId: packageData.carId } : {}),
+        ...(packageData.mileage !== undefined
+          ? { mileage: packageData.mileage }
+          : {})
       }
 
       const docRef = await addDoc(
@@ -201,10 +263,34 @@ export class PackageService {
   ): Promise<boolean> {
     try {
       const packageRef = doc(db, this.COLLECTION_NAME, packageId)
-      const updateData = {
-        ...updates,
+      // Omit undefined fields and clean appliesTo.value if undefined
+      const appliesToClean = updates.appliesTo
+        ? updates.appliesTo.value === undefined
+          ? { type: updates.appliesTo.type }
+          : {
+              type: updates.appliesTo.type,
+              value: updates.appliesTo.value
+            }
+        : undefined
+
+      // Build update payload explicitly, only include defined fields
+      const updateData: FirestoreUpdatePackagePayload = {
         updatedAt: serverTimestamp()
       }
+      if (appliesToClean) updateData.appliesTo = appliesToClean
+      if (updates.name !== undefined) updateData.name = updates.name
+      if (updates.description !== undefined)
+        updateData.description = updates.description
+      if (updates.price !== undefined) updateData.price = updates.price
+      if (updates.features !== undefined) updateData.features = updates.features
+      if (updates.isActive !== undefined) updateData.isActive = updates.isActive
+      if (updates.planType !== undefined) updateData.planType = updates.planType
+      if (updates.term !== undefined) updateData.term = updates.term
+      if (updates.rate !== undefined) updateData.rate = updates.rate
+      if (updates.downPayment !== undefined)
+        updateData.downPayment = updates.downPayment
+      if (updates.mileage !== undefined) updateData.mileage = updates.mileage
+      if (updates.carId !== undefined) updateData.carId = updates.carId
 
       await updateDoc(packageRef, updateData)
       return true

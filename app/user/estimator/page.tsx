@@ -1,6 +1,6 @@
 'use client'
 import React, { useEffect, useMemo, useState } from 'react'
-import { useCarPackages, useAllPackages } from '@/hooks/useCarPackages'
+import { useAllPackages } from '@/hooks/useCarPackages'
 import Link from 'next/link'
 import { CarService } from '@/lib/services/carService'
 import { useAuth } from '@/contexts/AuthContext'
@@ -125,10 +125,10 @@ export default function Estimator() {
     selectedPackage && selectedPackage.planType === mode
       ? selectedPackage.downPayment
       : cashDown
-  const effectiveMiles =
-    selectedPackage && selectedPackage.planType === 'lease' && mode === 'lease'
-      ? selectedPackage.mileage || annualMiles
-      : annualMiles
+  // const effectiveMiles =
+  //   selectedPackage && selectedPackage.planType === 'lease' && mode === 'lease'
+  //     ? selectedPackage.mileage || annualMiles
+  //     : annualMiles
 
   const capCost = useMemo(
     () => Math.max(0, msrp + dph - effectiveDown - tradeIn - localOffer),

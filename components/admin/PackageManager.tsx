@@ -75,7 +75,7 @@ export default function PackageManager() {
       setValue('name', editingPackage.name)
       setValue('description', editingPackage.description)
       setValue('price', editingPackage.price)
-  setValue('features', (editingPackage.features ?? []).join('\n'))
+      setValue('features', (editingPackage.features ?? []).join('\n'))
       setValue('planType', editingPackage.planType)
       setValue('term', editingPackage.term)
       setValue('rate', editingPackage.rate)
@@ -87,11 +87,9 @@ export default function PackageManager() {
       if (appliesToType === 'car') {
         const car = cars.find(c => c.id === watchedCarId)
         if (car) defaultPrice = car.basePrice
-      } else if (appliesToType === 'model') {
-        const car = cars.find(c => c.model === watchedAppliesToValue)
-        if (car) defaultPrice = car.basePrice
-      } else if (appliesToType === 'trim') {
-        const car = cars.find(c => c.trim === watchedAppliesToValue)
+      } else if (appliesToType === 'model' || appliesToType === 'trim') {
+        // Value input is hidden; use selected car to infer base price
+        const car = cars.find(c => c.id === watchedCarId)
         if (car) defaultPrice = car.basePrice
       }
       if (defaultPrice > 0) setValue('price', defaultPrice)
@@ -106,18 +104,39 @@ export default function PackageManager() {
     watchedAppliesToValue
   ])
 
+  // Keep appliesToValue in sync with selected car when type is 'car'
+  useEffect(() => {
+    if (appliesToType === 'car' && watchedCarId) {
+      setValue('appliesToValue', watchedCarId)
+    }
+  }, [appliesToType, watchedCarId, setValue])
+
   const onSubmit = async (data: PackageFormData) => {
     try {
+      // Resolve appliesTo.value based on type
+      let resolvedValue: string | undefined = undefined
+      if (data.appliesToType === 'car') {
+        resolvedValue = data.carId || data.appliesToValue
+      } else if (data.appliesToType === 'model' || data.appliesToType === 'trim') {
+        const car = cars.find(c => c.id === data.carId)
+        if (car) {
+          resolvedValue = data.appliesToType === 'model' ? car.model : car.trim
+        }
+      }
+
       const packageData: CreatePackageData = {
         carId: data.appliesToType === 'car' ? data.carId : undefined,
         appliesTo: {
           type: data.appliesToType,
-          value: data.appliesToType !== 'all' ? data.appliesToValue : undefined
+          value: data.appliesToType !== 'all' ? resolvedValue : undefined
         },
         name: data.name,
         description: data.description,
-        price: data.price,
-        features: data.features.split('\n').filter(f => f.trim() !== ''),
+        price: Number(data.price),
+        features: (data.features || '')
+          .split('\n')
+          .map(f => f.trim())
+          .filter(f => f !== ''),
         planType: data.planType,
         term: Number(data.term),
         rate: Number(data.rate),
@@ -298,25 +317,19 @@ export default function PackageManager() {
                     </p>
                   )}
                 </div>
-                {/* Show value input if not 'all' */}
-                {(watch('appliesToType') || 'all') !== 'all' && (
+                {/* Show value input only for 'Specific Car' */}
+                {watch('appliesToType') === 'car' && (
                   <div>
                     <label className='mb-1 block text-sm font-medium text-gray-700'>
                       Value *
                     </label>
                     <Input
                       {...register('appliesToValue', {
-                        required: 'Please specify the value for this type'
+                        required: appliesToType === 'car'
+                          ? 'Please specify the car ID'
+                          : false
                       })}
-                      placeholder={
-                        watch('appliesToType') === 'model'
-                          ? 'e.g. Camry'
-                          : watch('appliesToType') === 'trim'
-                            ? 'e.g. XSE'
-                            : watch('appliesToType') === 'car'
-                              ? 'Car ID'
-                              : ''
-                      }
+                      placeholder='Car ID'
                     />
                     {errors.appliesToValue && (
                       <p className='mt-1 text-sm text-red-600'>
@@ -459,7 +472,7 @@ export default function PackageManager() {
                     type='number'
                     {...register('mileage', { valueAsNumber: true })}
                     placeholder='12000'
-                    disabled={false}
+                    disabled={watch('planType') !== 'lease'}
                   />
                 </div>
                 <div className='md:col-span-2'>

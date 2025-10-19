@@ -54,7 +54,6 @@ export default function FinanceApplicationPage() {
 
   const fetchData = async () => {
     try {
-      // Fetch dealerships using centralized service
       setDealerships(DealershipService.getAllDealerships())
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -147,13 +146,11 @@ export default function FinanceApplicationPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Unified Finance Calculator & Form */}
           <div>
             <UnifiedFinanceCalculator
               vehiclePrice={car.basePrice}
               onValuesChange={(values) => {
                 setCalculation(values.calculation)
-                // Sync all values with the form
                 setValue('financeType', values.financeType)
                 setValue('creditScore', values.creditScore)
                 setValue('annualIncome', values.annualIncome)

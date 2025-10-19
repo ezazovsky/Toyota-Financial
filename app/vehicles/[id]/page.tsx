@@ -6,7 +6,6 @@ import { useCar } from '@/hooks/useCar'
 import { useCarPackages } from '@/hooks/useCarPackages'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import UnifiedFinanceCalculator from '@/components/UnifiedFinanceCalculator'
 import { formatCurrency } from '@/lib/utils'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -207,20 +206,27 @@ export default function VehicleDetailPage() {
             </Card>
           </div>
 
-          {/* Finance Calculator */}
+          {/* Quick Actions */}
           <div>
-            <UnifiedFinanceCalculator vehiclePrice={car.basePrice} />
-
-            <div className='mt-6 space-y-4'>
-              <Link href={`/vehicles/${car.id}/finance`} className='block'>
-                <Button size='lg' className='w-full'>
-                  Get Pre-Approved
-                </Button>
-              </Link>
-              <Button size='lg' variant='outline' className='w-full'>
-                Schedule Test Drive
-              </Button>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Get Started</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    <Link href={`/vehicles/${car.id}/finance`} className='block'>
+                      <Button size='lg' className='w-full'>
+                        Leasing or Financing Options
+                      </Button>
+                    </Link>
+                    <Button size='lg' variant='outline' className='w-full'>
+                      Schedule Test Drive
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

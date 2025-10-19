@@ -1,13 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useParams } from 'next/navigation'
-import { doc, getDoc } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
-import { Car } from '@/types'
+import { useCar } from '@/hooks/useCar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import FinanceCalculator from '@/components/FinanceCalculator'
+import UnifiedFinanceCalculator from '@/components/UnifiedFinanceCalculator'
 import { formatCurrency } from '@/lib/utils'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -15,102 +13,8 @@ import { ArrowLeft, Fuel, Gauge, Users, Settings, Car as CarIcon } from 'lucide-
 
 export default function VehicleDetailPage() {
   const params = useParams()
-  const [car, setCar] = useState<Car | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { car, loading } = useCar(params.id as string)
   const [selectedImage, setSelectedImage] = useState(0)
-
-  useEffect(() => {
-    fetchCar()
-  }, [params.id])
-
-  const fetchCar = async () => {
-    try {
-      // For demo, use sample data if Firebase document doesn't exist
-      const carId = params.id as string
-      const sampleCar = getSampleCarById(carId)
-      
-      if (sampleCar) {
-        setCar(sampleCar)
-      } else {
-        const carDoc = await getDoc(doc(db, 'cars', carId))
-        if (carDoc.exists()) {
-          setCar({
-            id: carDoc.id,
-            ...carDoc.data(),
-            createdAt: carDoc.data().createdAt?.toDate() || new Date(),
-          } as Car)
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching car:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const getSampleCarById = (id: string): Car | null => {
-    const sampleCars: { [key: string]: Car } = {
-      '1': {
-        id: '1',
-        make: 'Toyota',
-        model: 'Camry',
-        year: 2024,
-        trim: 'XLE',
-        basePrice: 28900,
-        images: ['/placeholder-car.svg'],
-        specifications: {
-          engine: '2.5L 4-Cylinder',
-          transmission: '8-Speed Automatic',
-          fuelType: 'Gasoline',
-          mpg: { city: 28, highway: 39 },
-          drivetrain: 'FWD',
-          seating: 5,
-          bodyStyle: 'Sedan'
-        },
-        packages: [
-          {
-            id: 'p1',
-            name: 'Premium Package',
-            description: 'Leather seats, sunroof, premium audio',
-            price: 2500,
-            features: ['Leather-appointed seating', 'Power moonroof', 'Premium JBL audio', 'Wireless charging']
-          },
-          {
-            id: 'p2',
-            name: 'Technology Package',
-            description: 'Advanced safety and tech features',
-            price: 1800,
-            features: ['Adaptive cruise control', '10-inch touchscreen', 'Head-up display', 'Blind spot monitoring']
-          }
-        ],
-        isNew: true,
-        createdAt: new Date(),
-      },
-      '2': {
-        id: '2',
-        make: 'Toyota',
-        model: 'RAV4',
-        year: 2024,
-        trim: 'Adventure',
-        basePrice: 34500,
-        images: ['/placeholder-car.svg'],
-        specifications: {
-          engine: '2.5L 4-Cylinder',
-          transmission: 'CVT',
-          fuelType: 'Gasoline',
-          mpg: { city: 27, highway: 35 },
-          drivetrain: 'AWD',
-          seating: 5,
-          bodyStyle: 'SUV'
-        },
-        isNew: true,
-        createdAt: new Date(),
-      },
-      // Add more sample cars...
-    }
-    
-    return sampleCars[id] || null
-  }
 
   if (loading) {
     return (
@@ -258,7 +162,7 @@ export default function VehicleDetailPage() {
 
           {/* Finance Calculator */}
           <div>
-            <FinanceCalculator vehiclePrice={car.basePrice} />
+            <UnifiedFinanceCalculator vehiclePrice={car.basePrice} />
             
             <div className="mt-6 space-y-4">
               <Link href={`/vehicles/${car.id}/finance`} className="block">

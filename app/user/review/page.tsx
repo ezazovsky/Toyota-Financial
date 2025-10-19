@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuthRedirect } from '@/hooks/useAuthRedirect'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { fullFinanceApplicationSchema, FullFinanceApplicationForm } from '@/lib/validation/financeSchemas'
 import toast from 'react-hot-toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -26,29 +26,15 @@ import {
   Loader2
 } from 'lucide-react'
 
-const financeApplicationSchema = z.object({
-  carId: z.string().min(1, 'Please select a vehicle'),
-  financeType: z.enum(['finance', 'lease']),
-  creditScore: z.number().min(300, 'Credit score must be at least 300').max(850, 'Credit score cannot exceed 850'),
-  annualIncome: z.number().min(1000, 'Annual income must be at least $1,000'),
-  termLength: z.number().min(12, 'Term must be at least 12 months').max(84, 'Term cannot exceed 84 months'),
-  downPayment: z.number().min(0, 'Down payment cannot be negative'),
-  monthlyPayment: z.number().optional(),
-  annualMileage: z.number().optional(),
-  dealershipId: z.string().optional().default('default-dealership')
-})
-
-type FinanceApplicationForm = z.infer<typeof financeApplicationSchema>
-
 export default function ReviewPage() {
-  const { user } = useAuth()
+  const { user } = useAuthRedirect()
   const router = useRouter()
   const [selectedCar, setSelectedCar] = useState<Car | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
-    resolver: zodResolver(financeApplicationSchema),
+    resolver: zodResolver(fullFinanceApplicationSchema),
     defaultValues: {
       financeType: 'finance' as const,
       creditScore: 720,
@@ -62,12 +48,6 @@ export default function ReviewPage() {
   const carId = watch('carId')
 
   useEffect(() => {
-    if (!user) {
-      router.push('/login')
-    }
-  }, [user, router])
-
-  useEffect(() => {
     if (carId) {
       const car = CarService.getCarById(carId)
       setSelectedCar(car)
@@ -76,7 +56,7 @@ export default function ReviewPage() {
 
   const availableCars = CarService.getAllCars()
 
-  const onSubmit = async (data: FinanceApplicationForm) => {
+  const onSubmit = async (data: FullFinanceApplicationForm) => {
     if (!user || !selectedCar) {
       toast.error('Please make sure you are logged in and have selected a vehicle')
       return

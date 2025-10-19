@@ -5,12 +5,12 @@ import { Car } from '@/types'
 export const TOYOTA_MODELS: Car[] = [
   // Sedans
   {
-    id: 'camry-le-2024',
+    id: '1',
     make: 'Toyota',
     model: 'Camry',
     year: 2024,
-    trim: 'LE',
-    basePrice: 26395,
+    trim: 'XLE',
+    basePrice: 28900,
     images: [
       '/images/cars/camry-le-2024-1.jpg',
       '/images/cars/camry-le-2024-2.jpg',
@@ -27,64 +27,63 @@ export const TOYOTA_MODELS: Car[] = [
     },
     packages: [
       {
-        id: 'convenience',
-        name: 'Convenience Package',
-        description: 'Power moonroof, wireless charging',
-        price: 1200,
-        features: ['Power moonroof', 'Wireless phone charging', 'Remote start']
+        id: 'premium',
+        name: 'Premium Package',
+        description: 'Leather seats, sunroof, premium audio',
+        price: 2500,
+        features: ['Leather-appointed seating', 'Power moonroof', 'Premium JBL audio', 'Wireless charging']
+      },
+      {
+        id: 'technology',
+        name: 'Technology Package',
+        description: 'Advanced safety and tech features',
+        price: 1800,
+        features: ['Adaptive cruise control', '10-inch touchscreen', 'Head-up display', 'Blind spot monitoring']
       }
     ],
     isNew: true,
     createdAt: new Date()
   },
   {
-    id: 'camry-xle-2024',
+    id: '2',
     make: 'Toyota',
-    model: 'Camry',
+    model: 'RAV4',
     year: 2024,
-    trim: 'XLE',
-    basePrice: 31395,
+    trim: 'Adventure',
+    basePrice: 34500,
     images: [
-      '/images/cars/camry-xle-2024-1.jpg',
-      '/images/cars/camry-xle-2024-2.jpg'
+      '/images/cars/rav4-adventure-2024-1.jpg',
+      '/images/cars/rav4-adventure-2024-2.jpg'
     ],
     specifications: {
       engine: '2.5L 4-Cylinder',
-      transmission: '8-Speed Automatic',
+      transmission: 'CVT',
       fuelType: 'Gasoline',
-      mpg: { city: 32, highway: 41 },
-      drivetrain: 'FWD',
+      mpg: { city: 27, highway: 35 },
+      drivetrain: 'AWD',
       seating: 5,
-      bodyStyle: 'Sedan'
+      bodyStyle: 'SUV'
     },
-    packages: [
-      {
-        id: 'premium',
-        name: 'Premium Package',
-        description: 'Leather seats, premium audio',
-        price: 2500,
-        features: ['Leather-trimmed seats', 'JBL Audio', 'Heated/ventilated seats']
-      }
-    ],
+    packages: [],
     isNew: true,
     createdAt: new Date()
   },
   {
-    id: 'camry-trd-2024',
+    id: '3',
     make: 'Toyota',
-    model: 'Camry',
+    model: 'Prius',
     year: 2024,
-    trim: 'TRD',
-    basePrice: 35395,
-    images: ['/images/cars/camry-trd-2024-1.jpg'],
+    trim: 'LE',
+    basePrice: 26400,
+    images: ['/images/cars/prius-le-2024-1.jpg'],
     specifications: {
-      engine: '3.5L V6',
-      transmission: '8-Speed Automatic',
-      fuelType: 'Gasoline',
-      mpg: { city: 22, highway: 33 },
+      engine: '1.8L Hybrid',
+      transmission: 'CVT',
+      fuelType: 'Hybrid',
+      mpg: { city: 58, highway: 53 },
       drivetrain: 'FWD',
       seating: 5,
-      bodyStyle: 'Sedan'
+      bodyStyle: 'Hatchback'
     },
     packages: [],
     isNew: true,
@@ -93,12 +92,33 @@ export const TOYOTA_MODELS: Car[] = [
   
   // Corolla Models
   {
-    id: 'corolla-le-2024',
+    id: '4',
+    make: 'Toyota',
+    model: 'Highlander',
+    year: 2024,
+    trim: 'XLE',
+    basePrice: 38420,
+    images: ['/images/cars/highlander-xle-2024-1.jpg'],
+    specifications: {
+      engine: '3.5L V6',
+      transmission: '8-Speed Automatic',
+      fuelType: 'Gasoline',
+      mpg: { city: 21, highway: 29 },
+      drivetrain: 'AWD',
+      seating: 8,
+      bodyStyle: 'SUV'
+    },
+    packages: [],
+    isNew: true,
+    createdAt: new Date()
+  },
+  {
+    id: '5',
     make: 'Toyota',
     model: 'Corolla',
     year: 2024,
     trim: 'LE',
-    basePrice: 24295,
+    basePrice: 23200,
     images: ['/images/cars/corolla-le-2024-1.jpg'],
     specifications: {
       engine: '2.0L 4-Cylinder',
@@ -113,246 +133,36 @@ export const TOYOTA_MODELS: Car[] = [
     isNew: true,
     createdAt: new Date()
   },
-  {
-    id: 'corolla-se-2024',
-    make: 'Toyota',
-    model: 'Corolla',
-    year: 2024,
-    trim: 'SE',
-    basePrice: 25795,
-    images: ['/images/cars/corolla-se-2024-1.jpg'],
-    specifications: {
-      engine: '2.0L 4-Cylinder',
-      transmission: 'CVT',
-      fuelType: 'Gasoline',
-      mpg: { city: 31, highway: 40 },
-      drivetrain: 'FWD',
-      seating: 5,
-      bodyStyle: 'Sedan'
-    },
-    packages: [],
-    isNew: true,
-    createdAt: new Date()
-  },
 
   // RAV4 Models
   {
-    id: 'rav4-le-2024',
-    make: 'Toyota',
-    model: 'RAV4',
-    year: 2024,
-    trim: 'LE',
-    basePrice: 29200,
-    images: ['/images/cars/rav4-le-2024-1.jpg'],
-    specifications: {
-      engine: '2.5L 4-Cylinder',
-      transmission: '8-Speed Automatic',
-      fuelType: 'Gasoline',
-      mpg: { city: 27, highway: 35 },
-      drivetrain: 'AWD',
-      seating: 5,
-      bodyStyle: 'SUV'
-    },
-    packages: [
-      {
-        id: 'weather',
-        name: 'Weather Package',
-        description: 'All-weather floor mats and cargo tray',
-        price: 300,
-        features: ['All-weather floor mats', 'Cargo tray', 'Mud guards']
-      }
-    ],
-    isNew: true,
-    createdAt: new Date()
-  },
-  {
-    id: 'rav4-xle-2024',
-    make: 'Toyota',
-    model: 'RAV4',
-    year: 2024,
-    trim: 'XLE',
-    basePrice: 32200,
-    images: ['/images/cars/rav4-xle-2024-1.jpg'],
-    specifications: {
-      engine: '2.5L 4-Cylinder',
-      transmission: '8-Speed Automatic',
-      fuelType: 'Gasoline',
-      mpg: { city: 27, highway: 35 },
-      drivetrain: 'AWD',
-      seating: 5,
-      bodyStyle: 'SUV'
-    },
-    packages: [
-      {
-        id: 'premium-rav4',
-        name: 'Premium Package',
-        description: 'Moonroof, wireless charging, premium audio',
-        price: 1800,
-        features: ['Power moonroof', 'Wireless charging', 'JBL Audio', 'Heated seats']
-      }
-    ],
-    isNew: true,
-    createdAt: new Date()
-  },
-  {
-    id: 'rav4-hybrid-le-2024',
-    make: 'Toyota',
-    model: 'RAV4 Hybrid',
-    year: 2024,
-    trim: 'LE',
-    basePrice: 32200,
-    images: ['/images/cars/rav4-hybrid-le-2024-1.jpg'],
-    specifications: {
-      engine: '2.5L Hybrid',
-      transmission: 'CVT',
-      fuelType: 'Hybrid',
-      mpg: { city: 41, highway: 38 },
-      drivetrain: 'AWD',
-      seating: 5,
-      bodyStyle: 'SUV'
-    },
-    packages: [],
-    isNew: true,
-    createdAt: new Date()
-  },
-
-  // Prius Models
-  {
-    id: 'prius-le-2024',
-    make: 'Toyota',
-    model: 'Prius',
-    year: 2024,
-    trim: 'LE',
-    basePrice: 28395,
-    images: ['/images/cars/prius-le-2024-1.jpg'],
-    specifications: {
-      engine: '2.0L Hybrid',
-      transmission: 'CVT',
-      fuelType: 'Hybrid',
-      mpg: { city: 54, highway: 50 },
-      drivetrain: 'FWD',
-      seating: 5,
-      bodyStyle: 'Hatchback'
-    },
-    packages: [],
-    isNew: true,
-    createdAt: new Date()
-  },
-
-  // Highlander Models
-  {
-    id: 'highlander-le-2024',
-    make: 'Toyota',
-    model: 'Highlander',
-    year: 2024,
-    trim: 'LE',
-    basePrice: 37395,
-    images: ['/images/cars/highlander-le-2024-1.jpg'],
-    specifications: {
-      engine: '2.4L Turbo 4-Cylinder',
-      transmission: '8-Speed Automatic',
-      fuelType: 'Gasoline',
-      mpg: { city: 24, highway: 32 },
-      drivetrain: 'AWD',
-      seating: 8,
-      bodyStyle: 'SUV'
-    },
-    packages: [
-      {
-        id: 'family',
-        name: 'Family Package',
-        description: 'Third row seating enhancements',
-        price: 800,
-        features: ['Captain\'s chairs', 'Third row USB ports', 'Rear entertainment']
-      }
-    ],
-    isNew: true,
-    createdAt: new Date()
-  },
-  {
-    id: 'highlander-xle-2024',
-    make: 'Toyota',
-    model: 'Highlander',
-    year: 2024,
-    trim: 'XLE',
-    basePrice: 42395,
-    images: ['/images/cars/highlander-xle-2024-1.jpg'],
-    specifications: {
-      engine: '2.4L Turbo 4-Cylinder',
-      transmission: '8-Speed Automatic',
-      fuelType: 'Gasoline',
-      mpg: { city: 24, highway: 32 },
-      drivetrain: 'AWD',
-      seating: 8,
-      bodyStyle: 'SUV'
-    },
-    packages: [],
-    isNew: true,
-    createdAt: new Date()
-  },
-
-  // 4Runner Models
-  {
-    id: '4runner-sr5-2024',
-    make: 'Toyota',
-    model: '4Runner',
-    year: 2024,
-    trim: 'SR5',
-    basePrice: 40705,
-    images: ['/images/cars/4runner-sr5-2024-1.jpg'],
-    specifications: {
-      engine: '4.0L V6',
-      transmission: '5-Speed Automatic',
-      fuelType: 'Gasoline',
-      mpg: { city: 17, highway: 20 },
-      drivetrain: '4WD',
-      seating: 5,
-      bodyStyle: 'SUV'
-    },
-    packages: [
-      {
-        id: 'offroad',
-        name: 'Off-Road Package',
-        description: 'Enhanced off-road capabilities',
-        price: 2200,
-        features: ['Crawl Control', 'Multi-terrain Select', 'Off-road tires']
-      }
-    ],
-    isNew: true,
-    createdAt: new Date()
-  },
-
-  // Tacoma Models
-  {
-    id: 'tacoma-sr-2024',
+    id: '6',
     make: 'Toyota',
     model: 'Tacoma',
     year: 2024,
-    trim: 'SR',
+    trim: 'SR5',
     basePrice: 31895,
-    images: ['/images/cars/tacoma-sr-2024-1.jpg'],
+    images: ['/images/cars/tacoma-sr5-2024-1.jpg'],
     specifications: {
-      engine: '2.4L Turbo 4-Cylinder',
-      transmission: '8-Speed Automatic',
+      engine: '2.7L 4-Cylinder',
+      transmission: '6-Speed Automatic',
       fuelType: 'Gasoline',
-      mpg: { city: 22, highway: 26 },
+      mpg: { city: 20, highway: 23 },
       drivetrain: '4WD',
       seating: 5,
-      bodyStyle: 'Truck'
+      bodyStyle: 'Pickup'
     },
     packages: [],
     isNew: true,
     createdAt: new Date()
   },
-
-  // Sienna Models
   {
-    id: 'sienna-le-2024',
+    id: '7',
     make: 'Toyota',
     model: 'Sienna',
     year: 2024,
     trim: 'LE',
-    basePrice: 37290,
+    basePrice: 36340,
     images: ['/images/cars/sienna-le-2024-1.jpg'],
     specifications: {
       engine: '2.5L Hybrid',
@@ -363,15 +173,28 @@ export const TOYOTA_MODELS: Car[] = [
       seating: 8,
       bodyStyle: 'Minivan'
     },
-    packages: [
-      {
-        id: 'convenience-sienna',
-        name: 'Convenience Package',
-        description: 'Enhanced comfort features',
-        price: 1500,
-        features: ['Power sliding doors', 'Power liftgate', 'Remote start']
-      }
-    ],
+    packages: [],
+    isNew: true,
+    createdAt: new Date()
+  },
+  {
+    id: '8',
+    make: 'Toyota',
+    model: 'GR Supra',
+    year: 2024,
+    trim: '3.0',
+    basePrice: 56545,
+    images: ['/images/cars/gr-supra-2024-1.jpg'],
+    specifications: {
+      engine: '3.0L Turbo I6',
+      transmission: '8-Speed Automatic',
+      fuelType: 'Gasoline',
+      mpg: { city: 22, highway: 30 },
+      drivetrain: 'RWD',
+      seating: 2,
+      bodyStyle: 'Coupe'
+    },
+    packages: [],
     isNew: true,
     createdAt: new Date()
   }

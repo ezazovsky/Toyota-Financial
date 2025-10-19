@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuthRedirect } from '@/hooks/useAuthRedirect'
 import { useRouter } from 'next/navigation'
 
 import { FinanceRequest, Offer } from '@/types'
 import { FinanceService } from '@/lib/services/financeService'
+import { CarService } from '@/lib/services/carService'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -13,16 +14,10 @@ import { Badge } from '@/components/ui/badge'
 import { Clock, CheckCircle, XCircle, AlertCircle, Car, DollarSign, Calendar, TrendingUp } from 'lucide-react'
 
 export default function DashboardPage() {
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading } = useAuthRedirect()
   const router = useRouter()
   const [financeRequests, setFinanceRequests] = useState<FinanceRequest[]>([])
   const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login')
-    }
-  }, [user, authLoading, router])
 
   useEffect(() => {
     if (user) {
@@ -178,13 +173,17 @@ export default function DashboardPage() {
             </Card>
           ) : (
             <div className="space-y-6">
-              {financeRequests.map((request) => (
+              {financeRequests.map((request) => {
+                const car = CarService.getCarById(request.carId)
+                const carDisplayName = car ? `${car.year} ${car.make} ${car.model} ${car.trim}` : 'Vehicle Details Unavailable'
+                
+                return (
                 <Card key={request.id}>
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle className="flex items-center space-x-2">
                         {getStatusIcon(request.status)}
-                        <span>2024 Toyota Camry XLE</span> {/* In real app, fetch car details */}
+                        <span>{carDisplayName}</span>
                       </CardTitle>
                       <Badge className={getStatusColor(request.status)}>
                         {request.status.replace('-', ' ').toUpperCase()}
@@ -193,6 +192,31 @@ export default function DashboardPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* Vehicle Info */}
+                      {car && (
+                        <div>
+                          <h4 className="font-semibold text-gray-900 mb-3">Vehicle Details</h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">MSRP:</span>
+                              <span className="font-medium">{formatCurrency(car.basePrice)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Engine:</span>
+                              <span className="font-medium">{car.specifications.engine}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">MPG:</span>
+                              <span className="font-medium">{car.specifications.mpg.city}/{car.specifications.mpg.highway}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Drivetrain:</span>
+                              <span className="font-medium">{car.specifications.drivetrain}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
                       {/* Application Details */}
                       <div>
                         <h4 className="font-semibold text-gray-900 mb-3">Application Details</h4>
@@ -322,7 +346,7 @@ export default function DashboardPage() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+                )})}
             </div>
           )}
         </div>

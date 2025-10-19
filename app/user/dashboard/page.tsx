@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuthRedirect } from '@/hooks/useAuthRedirect'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -26,7 +26,7 @@ import {
 } from 'lucide-react'
 
 export default function UserDashboardPage() {
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading } = useAuthRedirect()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [financeRequests, setFinanceRequests] = useState<FinanceRequest[]>([])
@@ -36,12 +36,6 @@ export default function UserDashboardPage() {
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null)
 
   const applicationId = searchParams.get('applicationId')
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login')
-    }
-  }, [user, authLoading, router])
 
   useEffect(() => {
     if (user) {

@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuthRedirect } from '@/hooks/useAuthRedirect'
+import { useCar } from '@/hooks/useCar'
 import { collection, addDoc, getDocs, query, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { DealershipService } from '@/lib/services/dealershipService'
 import { Car, FinanceRequest, Dealership, FinanceCalculation } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,29 +14,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import UnifiedFinanceCalculator from '@/components/UnifiedFinanceCalculator'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { financeApplicationSchema, FinanceApplicationForm } from '@/lib/validation/financeSchemas'
 import toast from 'react-hot-toast'
 import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
 import { ArrowLeft, MapPin, Phone, Mail } from 'lucide-react'
 
-const financeSchema = z.object({
-  creditScore: z.number().min(300).max(850),
-  annualIncome: z.number().min(10000),
-  termLength: z.number().min(12).max(84),
-  annualMileage: z.number().optional(),
-  downPayment: z.number().min(0),
-  dealershipId: z.string().min(1, 'Please select a dealership'),
-  financeType: z.enum(['lease', 'finance']),
-})
-
-type FinanceForm = z.infer<typeof financeSchema>
-
 export default function FinanceApplicationPage() {
   const params = useParams()
   const router = useRouter()
-  const { user } = useAuth()
-  const [car, setCar] = useState<Car | null>(null)
+  const { user } = useAuthRedirect()
+  const { car, loading: carLoading } = useCar(params.id as string)
   const [dealerships, setDealerships] = useState<Dealership[]>([])
   const [calculation, setCalculation] = useState<FinanceCalculation | null>(null)
   const [loading, setLoading] = useState(true)
@@ -46,8 +36,8 @@ export default function FinanceApplicationPage() {
     formState: { errors },
     watch,
     setValue,
-  } = useForm<FinanceForm>({
-    resolver: zodResolver(financeSchema),
+  } = useForm<FinanceApplicationForm>({
+    resolver: zodResolver(financeApplicationSchema),
     defaultValues: {
       creditScore: 700,
       annualIncome: 60000,
@@ -62,21 +52,10 @@ export default function FinanceApplicationPage() {
     fetchData()
   }, [params.id])
 
-  useEffect(() => {
-    if (!user) {
-      router.push('/login')
-    }
-  }, [user, router])
-
   const fetchData = async () => {
     try {
-      // Fetch car data (using sample data for demo)
-      const carId = params.id as string
-      const sampleCar = getSampleCarById(carId)
-      setCar(sampleCar)
-
-      // Fetch dealerships (using sample data for demo)
-      setDealerships(getSampleDealerships())
+      // Fetch dealerships using centralized service
+      setDealerships(DealershipService.getAllDealerships())
     } catch (error) {
       console.error('Error fetching data:', error)
       toast.error('Error loading data')
@@ -85,74 +64,7 @@ export default function FinanceApplicationPage() {
     }
   }
 
-  const getSampleCarById = (id: string): Car | null => {
-    const sampleCars: { [key: string]: Car } = {
-      '1': {
-        id: '1',
-        make: 'Toyota',
-        model: 'Camry',
-        year: 2024,
-        trim: 'XLE',
-        basePrice: 28900,
-        images: ['/placeholder-car.svg'],
-        specifications: {
-          engine: '2.5L 4-Cylinder',
-          transmission: '8-Speed Automatic',
-          fuelType: 'Gasoline',
-          mpg: { city: 28, highway: 39 },
-          drivetrain: 'FWD',
-          seating: 5,
-          bodyStyle: 'Sedan'
-        },
-        isNew: true,
-        createdAt: new Date(),
-      },
-      // Add more sample cars as needed
-    }
-    
-    return sampleCars[id] || null
-  }
-
-  const getSampleDealerships = (): Dealership[] => [
-    {
-      id: '1',
-      name: 'Downtown Toyota',
-      address: '123 Main St',
-      city: 'Austin',
-      state: 'TX',
-      zipCode: '78701',
-      phone: '(512) 555-0123',
-      email: 'sales@downtowntoyota.com',
-      adminUserId: 'dealer1',
-      createdAt: new Date(),
-    },
-    {
-      id: '2',
-      name: 'North Austin Toyota',
-      address: '456 North Loop',
-      city: 'Austin',
-      state: 'TX',
-      zipCode: '78756',
-      phone: '(512) 555-0456',
-      email: 'sales@northaustintoyota.com',
-      adminUserId: 'dealer2',
-      createdAt: new Date(),
-    },
-    {
-      id: '3',
-      name: 'South Toyota Center',
-      address: '789 South Blvd',
-      city: 'Austin',
-      state: 'TX',
-      zipCode: '78745',
-      phone: '(512) 555-0789',
-      email: 'info@southtoyota.com',
-      adminUserId: 'dealer3',
-      createdAt: new Date(),
-    },
-  ]
-
-  const onSubmit = async (data: FinanceForm) => {
+  const onSubmit = async (data: FinanceApplicationForm) => {
     if (!user || !car || !calculation) return
 
     try {
@@ -191,7 +103,7 @@ export default function FinanceApplicationPage() {
     }
   }
 
-  if (loading) {
+  if (loading || carLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-red-600"></div>

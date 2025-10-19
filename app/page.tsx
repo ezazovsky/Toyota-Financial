@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react'
 import { collection, query, orderBy, limit, getDocs, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { CarService } from '@/lib/services/carService'
 import { Car } from '@/types'
 import CarCard from '@/components/CarCard'
-import { LoadingCard } from '@/components/ui/loading-spinner'
+import { LoadingCard } from '@/components/ui/enhanced-loading'
 import { ErrorState } from '@/components/ui/error-state'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,8 +31,9 @@ export default function Home() {
       const snapshot = await getDocs(q)
       
       if (snapshot.empty) {
-        // Create sample cars for demo
-        setCars(getSampleCars())
+        // Use centralized CarService instead of hardcoded data
+        const allCars = CarService.getAllCars()
+        setCars(allCars.slice(0, 6)) // Get first 6 cars
       } else {
         const carsData = snapshot.docs.map(doc => ({
           id: doc.id,
@@ -43,135 +45,13 @@ export default function Home() {
     } catch (error) {
       console.error('Error fetching cars:', error)
       setError('Failed to load vehicles. Please try again.')
-      // Fallback to sample cars on error
-      setCars(getSampleCars())
+      // Fallback to centralized CarService on error
+      const allCars = CarService.getAllCars()
+      setCars(allCars.slice(0, 6))
     } finally {
       setLoading(false)
     }
   }
-
-  const getSampleCars = (): Car[] => [
-    {
-      id: '1',
-      make: 'Toyota',
-      model: 'Camry',
-      year: 2024,
-      trim: 'XLE',
-      basePrice: 28900,
-      images: ['/placeholder-car.svg'],
-      specifications: {
-        engine: '2.5L 4-Cylinder',
-        transmission: 'Automatic',
-        fuelType: 'Gasoline',
-        mpg: { city: 28, highway: 39 },
-        drivetrain: 'FWD',
-        seating: 5,
-        bodyStyle: 'Sedan'
-      },
-      isNew: true,
-      createdAt: new Date(),
-    },
-    {
-      id: '2',
-      make: 'Toyota',
-      model: 'RAV4',
-      year: 2024,
-      trim: 'Adventure',
-      basePrice: 34500,
-      images: ['/placeholder-car.svg'],
-      specifications: {
-        engine: '2.5L 4-Cylinder',
-        transmission: 'CVT',
-        fuelType: 'Gasoline',
-        mpg: { city: 27, highway: 35 },
-        drivetrain: 'AWD',
-        seating: 5,
-        bodyStyle: 'SUV'
-      },
-      isNew: true,
-      createdAt: new Date(),
-    },
-    {
-      id: '3',
-      make: 'Toyota',
-      model: 'Prius',
-      year: 2024,
-      trim: 'LE',
-      basePrice: 26400,
-      images: ['/placeholder-car.svg'],
-      specifications: {
-        engine: '1.8L Hybrid',
-        transmission: 'CVT',
-        fuelType: 'Hybrid',
-        mpg: { city: 58, highway: 53 },
-        drivetrain: 'FWD',
-        seating: 5,
-        bodyStyle: 'Hatchback'
-      },
-      isNew: true,
-      createdAt: new Date(),
-    },
-    {
-      id: '4',
-      make: 'Toyota',
-      model: 'Highlander',
-      year: 2024,
-      trim: 'XLE',
-      basePrice: 38420,
-      images: ['/placeholder-car.svg'],
-      specifications: {
-        engine: '3.5L V6',
-        transmission: '8-Speed Automatic',
-        fuelType: 'Gasoline',
-        mpg: { city: 21, highway: 29 },
-        drivetrain: 'AWD',
-        seating: 8,
-        bodyStyle: 'SUV'
-      },
-      isNew: true,
-      createdAt: new Date(),
-    },
-    {
-      id: '5',
-      make: 'Toyota',
-      model: 'Corolla',
-      year: 2024,
-      trim: 'LE',
-      basePrice: 23200,
-      images: ['/placeholder-car.svg'],
-      specifications: {
-        engine: '2.0L 4-Cylinder',
-        transmission: 'CVT',
-        fuelType: 'Gasoline',
-        mpg: { city: 32, highway: 41 },
-        drivetrain: 'FWD',
-        seating: 5,
-        bodyStyle: 'Sedan'
-      },
-      isNew: true,
-      createdAt: new Date(),
-    },
-    {
-      id: '6',
-      make: 'Toyota',
-      model: 'Tacoma',
-      year: 2024,
-      trim: 'SR5',
-      basePrice: 31895,
-      images: ['/placeholder-car.svg'],
-      specifications: {
-        engine: '2.7L 4-Cylinder',
-        transmission: '6-Speed Automatic',
-        fuelType: 'Gasoline',
-        mpg: { city: 20, highway: 23 },
-        drivetrain: '4WD',
-        seating: 5,
-        bodyStyle: 'Pickup'
-      },
-      isNew: true,
-      createdAt: new Date(),
-    },
-  ]
 
   const filteredCars = cars.filter(car => {
     const searchQuery = searchTerm.toLowerCase().trim()

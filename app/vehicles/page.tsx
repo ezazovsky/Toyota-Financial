@@ -204,12 +204,22 @@ export default function VehiclesPage() {
 
   const filterCars = () => {
     let filtered = cars.filter(car => {
-      const matchesSearch = car.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           car.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           car.trim.toLowerCase().includes(searchTerm.toLowerCase())
+      // Create a combined searchable string with all relevant car information
+      const searchableText = `${car.make} ${car.model} ${car.trim} ${car.year} ${car.specifications.bodyStyle}`.toLowerCase()
+      const searchTermLower = searchTerm.toLowerCase().trim()
+      
+      // Handle empty search
+      if (!searchTermLower) {
+        const matchesPrice = car.basePrice >= priceRange.min && car.basePrice <= priceRange.max
+        const matchesBodyStyle = !selectedBodyStyle || car.specifications.bodyStyle === selectedBodyStyle
+        return matchesPrice && matchesBodyStyle
+      }
+      
+      // Support multi-word search by checking if all words in the search term exist in the searchable text
+      const searchWords = searchTermLower.split(/\s+/).filter(word => word.length > 0)
+      const matchesSearch = searchWords.every(word => searchableText.includes(word))
       
       const matchesPrice = car.basePrice >= priceRange.min && car.basePrice <= priceRange.max
-      
       const matchesBodyStyle = !selectedBodyStyle || car.specifications.bodyStyle === selectedBodyStyle
 
       return matchesSearch && matchesPrice && matchesBodyStyle
@@ -247,7 +257,7 @@ export default function VehiclesPage() {
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
                 type="text"
-                placeholder="Search vehicles..."
+                placeholder="Search by make, model, or year (e.g., 'Toyota RAV4', '2024 Hybrid')..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"

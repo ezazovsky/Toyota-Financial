@@ -249,7 +249,6 @@ export default function UnifiedFinanceCalculator({ vehiclePrice, onValuesChange 
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center p-4 bg-red-50 rounded-lg">
-                <DollarSign className="mx-auto h-8 w-8 text-red-600 mb-2" />
                 <div className="text-2xl font-bold text-red-600">
                   {formatCurrency(calculation.monthlyPayment)}
                 </div>

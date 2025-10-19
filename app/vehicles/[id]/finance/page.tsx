@@ -240,7 +240,6 @@ export default function FinanceApplicationPage() {
               </CardContent>
             </Card>
 
-            {/* Dealership Information Card */}
             <Card>
               <CardHeader>
                 <CardTitle>Available Dealerships</CardTitle>

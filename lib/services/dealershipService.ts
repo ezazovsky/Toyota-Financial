@@ -70,38 +70,4 @@ export class DealershipService {
   static getAllDealerships(): Dealership[] {
     return DEALERSHIPS
   }
-
-  // Get dealership by ID
-  static getDealershipById(dealershipId: string): Dealership | null {
-    return DEALERSHIPS.find(dealership => dealership.id === dealershipId) || null
-  }
-
-  // Get dealerships by city
-  static getDealershipsByCity(city: string): Dealership[] {
-    return DEALERSHIPS.filter(dealership => 
-      dealership.city.toLowerCase() === city.toLowerCase()
-    )
-  }
-
-  // Get dealerships by state
-  static getDealershipsByState(state: string): Dealership[] {
-    return DEALERSHIPS.filter(dealership => 
-      dealership.state.toLowerCase() === state.toLowerCase()
-    )
-  }
-
-  // Search dealerships by name or location
-  static searchDealerships(searchTerm: string): Dealership[] {
-    const term = searchTerm.toLowerCase()
-    return DEALERSHIPS.filter(dealership => 
-      dealership.name.toLowerCase().includes(term) ||
-      dealership.city.toLowerCase().includes(term) ||
-      dealership.address.toLowerCase().includes(term)
-    )
-  }
-
-  // Get dealership by admin user ID
-  static getDealershipByAdminUserId(adminUserId: string): Dealership | null {
-    return DEALERSHIPS.find(dealership => dealership.adminUserId === adminUserId) || null
-  }
 }

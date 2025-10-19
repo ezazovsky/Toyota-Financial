@@ -36,10 +36,14 @@ export interface Car {
 
 export interface CarPackage {
   id: string
+  carId?: string
   name: string
   description: string
   price: number
   features: string[]
+  isActive?: boolean
+  createdAt?: Date
+  updatedAt?: Date
 }
 
 export interface FinanceRequest {

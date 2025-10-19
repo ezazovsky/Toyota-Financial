@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useCar } from '@/hooks/useCar'
+import { useCarPackages } from '@/hooks/useCarPackages'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import UnifiedFinanceCalculator from '@/components/UnifiedFinanceCalculator'
@@ -20,8 +21,10 @@ import {
 
 export default function VehicleDetailPage() {
   const params = useParams()
-  const { car, loading } = useCar(params.id as string)
-  const [selectedImage, setSelectedImage] = useState(0)
+  const carId = params.id as string
+  const { car, loading, error } = useCar(carId)
+  const { packages, loading: packagesLoading } = useCarPackages(carId)
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
 
   if (loading) {
     return (
@@ -68,7 +71,7 @@ export default function VehicleDetailPage() {
             {/* Main Image */}
             <div className='relative mb-4 h-96 overflow-hidden rounded-lg bg-gray-200'>
               <Image
-                src={car.images[selectedImage]}
+                src={car.images[selectedImageIndex]}
                 alt={`${car.year} ${car.make} ${car.model}`}
                 fill
                 className='object-cover'
@@ -85,9 +88,9 @@ export default function VehicleDetailPage() {
                 {car.images.map((image, index) => (
                   <button
                     key={index}
-                    onClick={() => setSelectedImage(index)}
+                    onClick={() => setSelectedImageIndex(index)}
                     className={`relative h-20 w-20 overflow-hidden rounded-lg border-2 ${
-                      selectedImage === index
+                      selectedImageIndex === index
                         ? 'border-red-600'
                         : 'border-gray-300'
                     }`}
@@ -158,13 +161,13 @@ export default function VehicleDetailPage() {
                 </div>
 
                 {/* Packages */}
-                {car.packages && car.packages.length > 0 && (
+                {!packagesLoading && packages && packages.length > 0 && (
                   <div>
                     <h3 className='mb-3 text-lg font-semibold'>
                       Available Packages
                     </h3>
                     <div className='space-y-3'>
-                      {car.packages.map(pkg => (
+                      {packages.map(pkg => (
                         <div
                           key={pkg.id}
                           className='rounded-lg border border-gray-200 p-4'
@@ -185,6 +188,18 @@ export default function VehicleDetailPage() {
                           </ul>
                         </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+                
+                {packagesLoading && (
+                  <div>
+                    <h3 className='mb-3 text-lg font-semibold'>
+                      Available Packages
+                    </h3>
+                    <div className="animate-pulse">
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                     </div>
                   </div>
                 )}

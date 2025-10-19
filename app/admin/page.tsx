@@ -26,8 +26,12 @@ import {
   XCircle,
   AlertCircle,
   Edit,
-  Plus
+  Plus,
+  Package,
+  Settings
 } from 'lucide-react'
+import PackageManager from '@/components/admin/PackageManager'
+import { PackageService } from '@/lib/services/packageService'
 
 interface OfferForm {
   monthlyPayment: number
@@ -47,6 +51,7 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [selectedRequest, setSelectedRequest] = useState<FinanceRequest | null>(null)
   const [showOfferForm, setShowOfferForm] = useState(false)
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'packages'>('dashboard')
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<OfferForm>()
 
@@ -195,8 +200,39 @@ export default function AdminDashboardPage() {
           <p className="text-lg text-gray-600">Manage finance applications and offers</p>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {/* Tabs */}
+        <div className="mb-8">
+          <nav className="flex space-x-8" aria-label="Tabs">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`${
+                activeTab === 'dashboard'
+                  ? 'border-red-500 text-red-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+            >
+              <Settings className="h-4 w-4" />
+              Applications
+            </button>
+            <button
+              onClick={() => setActiveTab('packages')}
+              className={`${
+                activeTab === 'packages'
+                  ? 'border-red-500 text-red-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+            >
+              <Package className="h-4 w-4" />
+              Car Packages
+            </button>
+          </nav>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'dashboard' && (
+          <>
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
@@ -492,6 +528,34 @@ export default function AdminDashboardPage() {
                 </form>
               </CardContent>
             </Card>
+          </div>
+        )}
+          </>
+        )}
+
+        {/* Package Manager Tab */}
+        {activeTab === 'packages' && (
+          <div>
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-sm text-blue-700 mb-2">
+                <strong>Development:</strong> If this is your first time, you may need to seed initial packages.
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    await PackageService.seedPackages()
+                    toast.success('Packages seeded successfully!')
+                  } catch (error) {
+                    toast.error('Failed to seed packages')
+                  }
+                }}
+              >
+                Seed Initial Packages
+              </Button>
+            </div>
+            <PackageManager />
           </div>
         )}
       </div>

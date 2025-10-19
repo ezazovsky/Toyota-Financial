@@ -1,5 +1,6 @@
 // lib/services/carService.ts
 import { Car } from '@/types'
+import { PackageService } from './packageService'
 
 // Comprehensive Toyota model database with 2024-2025 lineup
 export const TOYOTA_MODELS: Car[] = [
@@ -21,32 +22,7 @@ export const TOYOTA_MODELS: Car[] = [
       seating: 5,
       bodyStyle: 'Sedan'
     },
-    packages: [
-      {
-        id: 'premium',
-        name: 'Premium Package',
-        description: 'Leather seats, sunroof, premium audio',
-        price: 2500,
-        features: [
-          'Leather-appointed seating',
-          'Power moonroof',
-          'Premium JBL audio',
-          'Wireless charging'
-        ]
-      },
-      {
-        id: 'technology',
-        name: 'Technology Package',
-        description: 'Advanced safety and tech features',
-        price: 1800,
-        features: [
-          'Adaptive cruise control',
-          '10-inch touchscreen',
-          'Head-up display',
-          'Blind spot monitoring'
-        ]
-      }
-    ],
+    packages: [], // Packages now loaded dynamically from Firestore
     isNew: true,
     createdAt: new Date()
   },
@@ -243,21 +219,16 @@ export class CarService {
     )
   }
 
-  // Calculate total price with packages
-  static calculateTotalPrice(carId: string, packageIds: string[] = []): number {
+  // Calculate total price with packages (now uses Firestore packages)
+  static async calculateTotalPrice(carId: string, packages: any[] = []): Promise<number> {
     const car = this.getCarById(carId)
     if (!car) return 0
 
     let totalPrice = car.basePrice
 
-    if (car.packages) {
-      packageIds.forEach(packageId => {
-        const carPackage = car.packages?.find(pkg => pkg.id === packageId)
-        if (carPackage) {
-          totalPrice += carPackage.price
-        }
-      })
-    }
+    packages.forEach(pkg => {
+      totalPrice += pkg.price
+    })
 
     return totalPrice
   }

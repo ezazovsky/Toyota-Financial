@@ -25,12 +25,10 @@ export function formatDate(date: Date): string {
 
 // Finance calculation utilities
 export function calculateMonthlyPayment(
-  principal: number,
+  loanAmount: number,
   annualRate: number,
-  termMonths: number,
-  downPayment: number = 0
+  termMonths: number
 ): number {
-  const loanAmount = principal - downPayment
   const monthlyRate = annualRate / 100 / 12
   
   if (monthlyRate === 0) {
@@ -52,10 +50,47 @@ export function calculateLeasePayment(
   downPayment: number = 0
 ): number {
   const capitalizedCost = vehiclePrice - downPayment
-  const depreciation = (capitalizedCost - residualValue) / termMonths
-  const interest = (capitalizedCost + residualValue) * moneyFactor
   
-  return depreciation + interest
+  // Depreciation component (amount of vehicle value used)
+  const depreciation = (capitalizedCost - residualValue) / termMonths
+  
+  // Finance charge component (interest on both the depreciated amount and residual)
+  const financeCharge = (capitalizedCost + residualValue) * moneyFactor
+  
+  return depreciation + financeCharge
+}
+
+// Lease-specific calculation that returns detailed breakdown
+export function calculateLeaseDetails(
+  vehiclePrice: number,
+  termMonths: number,
+  annualRate: number,
+  downPayment: number = 0
+) {
+  const residualValue = getResidualValue(vehiclePrice, termMonths)
+  const moneyFactor = annualRate / 2400 // Convert APR to money factor
+  const capitalizedCost = vehiclePrice - downPayment
+  
+  const depreciation = (capitalizedCost - residualValue) / termMonths
+  const financeCharge = (capitalizedCost + residualValue) * moneyFactor
+  const monthlyPayment = depreciation + financeCharge
+  
+  const totalOfPayments = monthlyPayment * termMonths
+  const totalCost = totalOfPayments + downPayment
+  const totalFinanceCharges = financeCharge * termMonths
+  
+  return {
+    monthlyPayment,
+    totalOfPayments,
+    totalCost,
+    totalFinanceCharges,
+    residualValue,
+    capitalizedCost,
+    depreciation: depreciation * termMonths,
+    downPayment,
+    termMonths,
+    interestRate: annualRate
+  }
 }
 
 export function getInterestRateByCredit(creditScore: number): number {

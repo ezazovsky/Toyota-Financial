@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { formatCurrency, calculateMonthlyPayment, calculateLeasePayment, getInterestRateByCredit, getResidualValue } from '@/lib/utils'
+import { formatCurrency, calculateMonthlyPayment, calculateLeasePayment, calculateLeaseDetails, getInterestRateByCredit, getResidualValue } from '@/lib/utils'
 import { FinanceCalculation } from '@/types'
 import { Calculator, TrendingUp, DollarSign, Star, Info } from 'lucide-react'
 import { getPricingBucket, getBucketRecommendations } from '@/lib/pricingBuckets'
@@ -40,7 +40,6 @@ export default function UnifiedFinanceCalculator({ vehiclePrice, onValuesChange 
   }, [financeType, creditScore, annualIncome, downPayment, termLength, annualMileage, vehiclePrice])
 
   const calculatePayment = () => {
-    const loanAmount = vehiclePrice - downPayment
     const interestRate = getInterestRateByCredit(creditScore)
     
     let monthlyPayment: number
@@ -48,11 +47,12 @@ export default function UnifiedFinanceCalculator({ vehiclePrice, onValuesChange 
     let totalInterest: number
 
     if (financeType === 'lease') {
-      const residualValue = getResidualValue(vehiclePrice, termLength)
-      monthlyPayment = calculateLeasePayment(loanAmount, residualValue, interestRate, termLength)
-      totalCost = (monthlyPayment * termLength) + downPayment
-      totalInterest = totalCost - vehiclePrice
+      const leaseDetails = calculateLeaseDetails(vehiclePrice, termLength, interestRate, downPayment)
+      monthlyPayment = leaseDetails.monthlyPayment
+      totalCost = leaseDetails.totalOfPayments + downPayment
+      totalInterest = leaseDetails.totalFinanceCharges
     } else {
+      const loanAmount = vehiclePrice - downPayment
       monthlyPayment = calculateMonthlyPayment(loanAmount, interestRate, termLength)
       totalCost = (monthlyPayment * termLength) + downPayment
       totalInterest = totalCost - vehiclePrice
@@ -260,7 +260,9 @@ export default function UnifiedFinanceCalculator({ vehiclePrice, onValuesChange 
                 <div className="text-xl font-semibold text-gray-900">
                   {formatCurrency(calculation.totalCost)}
                 </div>
-                <div className="text-sm text-gray-600">Total Cost</div>
+                <div className="text-sm text-gray-600">
+                  {financeType === 'lease' ? 'Total Payments' : 'Total Cost'}
+                </div>
               </div>
 
               <div className="text-center p-4 bg-gray-50 rounded-lg">
@@ -272,7 +274,9 @@ export default function UnifiedFinanceCalculator({ vehiclePrice, onValuesChange 
             </div>
 
             <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <h4 className="font-semibold text-blue-900 mb-2">Summary</h4>
+              <h4 className="font-semibold text-blue-900 mb-2">
+                {financeType === 'lease' ? 'Lease Summary' : 'Finance Summary'}
+              </h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span>Vehicle Price:</span>
@@ -282,18 +286,41 @@ export default function UnifiedFinanceCalculator({ vehiclePrice, onValuesChange 
                   <span>Down Payment:</span>
                   <span>{formatCurrency(calculation.downPayment)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Amount Financed:</span>
-                  <span>{formatCurrency(vehiclePrice - calculation.downPayment)}</span>
-                </div>
+                {financeType === 'lease' ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span>Capitalized Cost:</span>
+                      <span>{formatCurrency(vehiclePrice - calculation.downPayment)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Residual Value:</span>
+                      <span>{formatCurrency(getResidualValue(vehiclePrice, calculation.termLength))}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Depreciation:</span>
+                      <span>{formatCurrency((vehiclePrice - calculation.downPayment) - getResidualValue(vehiclePrice, calculation.termLength))}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex justify-between">
+                    <span>Amount Financed:</span>
+                    <span>{formatCurrency(vehiclePrice - calculation.downPayment)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span>Term:</span>
                   <span>{calculation.termLength} months</span>
                 </div>
                 <div className="flex justify-between font-semibold">
-                  <span>Total Interest:</span>
+                  <span>{financeType === 'lease' ? 'Total Finance Charges:' : 'Total Interest:'}</span>
                   <span>{formatCurrency(calculation.totalInterest)}</span>
                 </div>
+                {financeType === 'lease' && (
+                  <div className="flex justify-between font-semibold text-blue-800">
+                    <span>Total of Payments:</span>
+                    <span>{formatCurrency(calculation.totalCost - calculation.downPayment)}</span>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
